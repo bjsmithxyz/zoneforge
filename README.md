@@ -26,7 +26,7 @@ git submodule update --init --recursive
 ## Stack
 
 - **Client**: Unity 6 (URP), C#, SpacetimeDB C# SDK
-- **Server**: Rust, SpacetimeDB 1.0
+- **Server**: Rust, SpacetimeDB 1.x (resolved: 1.12.0)
 
 ## Submodule Workflow
 
