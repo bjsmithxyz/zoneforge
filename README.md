@@ -27,3 +27,14 @@ git submodule update --init --recursive
 
 - **Client**: Unity 6 (URP), C#, SpacetimeDB C# SDK
 - **Server**: Rust, SpacetimeDB 1.0
+
+## Submodule Workflow
+
+When you push changes to `client` or `server`, update the parent repo to track the new commits:
+
+```bash
+cd /home/beek/repos/ZoneForge
+git add client server
+git commit -m "Update submodules"
+git push
+```
