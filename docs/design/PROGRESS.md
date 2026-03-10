@@ -2,13 +2,13 @@
 
 ## Current Focus
 
-- [ ] Complete development environment setup (Rust toolchain, WASM target, SpacetimeDB CLI)
-- [ ] Define core tables: Player, Zone, EntityInstance
-- [ ] Define core reducers: create_player, move_player, create_zone, spawn_entity
-- [ ] Build and publish server module to local SpacetimeDB
-- [ ] Unity project setup with URP and SpacetimeDB SDK
-- [ ] Basic Zone Editor window (create zones with Grid + Tilemap)
-- [ ] Tile palette with ground layer painting
+- [x] Complete development environment setup (Rust toolchain, WASM target, SpacetimeDB CLI)
+- [x] Define core tables: Player, Zone, EntityInstance
+- [x] Define core reducers: create_player, move_player, create_zone, spawn_entity
+- [x] Build and publish server module to local SpacetimeDB
+- [x] Unity project setup with URP and SpacetimeDB SDK
+- [x] Basic Zone Editor window (create zones with Grid + Tilemap)
+- [x] Tile palette with ground layer painting
 
 ---
 
@@ -19,39 +19,39 @@
 - [x] Roadmap and design document
 - [x] Install Unity Hub + Unity 2022.3 LTS with URP
 - [x] Start SpacetimeDB local server
-- [ ] Install Rust toolchain (rustc, cargo, wasm32-unknown-unknown target)
-- [ ] Install SpacetimeDB CLI
-- [ ] Initialise Git repositories (client + server submodules)
-- [ ] Configure VS Code with extensions
+- [x] Install Rust toolchain (rustc, cargo, wasm32-unknown-unknown target)
+- [x] Install SpacetimeDB CLI
+- [x] Initialise Git repositories (client + server submodules)
+- [x] Configure VS Code with extensions
 
 ### Group 2 — Server Core
 
-- [ ] Define `Player` table (id, identity, name, position, health)
-- [ ] Define `Zone` table (id, name, grid_width, grid_height)
-- [ ] Define `EntityInstance` table (id, zone_id, prefab_name, position, type)
-- [ ] `create_player` reducer
-- [ ] `move_player` reducer
-- [ ] `create_zone` reducer
-- [ ] `spawn_entity` reducer
-- [ ] Build and publish module to local server
-- [ ] Verify with `spacetime sql` / `spacetime call`
+- [x] Define `Player` table (id, identity, name, position, health)
+- [x] Define `Zone` table (id, name, grid_width, grid_height)
+- [x] Define `EntityInstance` table (id, zone_id, prefab_name, position, type)
+- [x] `create_player` reducer
+- [x] `move_player` reducer
+- [x] `create_zone` reducer
+- [x] `spawn_entity` reducer
+- [x] Build and publish module to local server
+- [x] Verify with `spacetime sql` / `spacetime call`
 
 ### Group 3 — Unity Project & SDK
 
-- [ ] Create Unity project (2022.3 LTS, URP)
-- [ ] Basic ScriptableObject architecture (WorldData, ZoneVisualData)
-- [ ] Import test assets (character placeholder, prop placeholders)
-- [ ] Install SpacetimeDB C# SDK via Package Manager
-- [ ] SpacetimeDB connection manager (connect, subscribe, callbacks)
-- [ ] Verify Unity connects to local server and callbacks fire
+- [x] Create Unity project (2022.3 LTS, URP)
+- [x] Basic ScriptableObject architecture (WorldData, ZoneVisualData)
+- [x] Import test assets (character placeholder, prop placeholders)
+- [x] Install SpacetimeDB C# SDK via Package Manager
+- [x] SpacetimeDB connection manager (connect, subscribe, callbacks)
+- [x] Verify Unity connects to local server and callbacks fire
 
 ### Group 4 — Map Editor Basics
 
-- [ ] Zone Editor window (create zone → new scene with Grid + Tilemap)
-- [ ] ZoneController component
-- [ ] Tile palette setup (ground, decoration, collision layers)
-- [ ] Basic tile set (grass, dirt, stone)
-- [ ] Tile painting works in Scene view
+- [x] Zone Editor window (create zone → new scene with Grid + Tilemap)
+- [x] ZoneController component
+- [x] Tile palette setup (ground, decoration, collision layers)
+- [x] Basic tile set (grass, dirt, stone)
+- [x] Tile painting works in Scene view
 
 **Milestone: Unity connects to SpacetimeDB, zones can be created and painted**
 
