@@ -60,10 +60,20 @@ cd ../client && spacetime generate --lang csharp --out-dir Assets/Scripts/autoge
 
 ## Important Gotchas
 
-- `wasm-opt` warning during build is non-critical — ignore during development
+- `wasm-opt` warning during `spacetime build` is non-critical — ignore during development
 - Unity auto-generates `.vscode/settings.json` — do not overwrite it
 - Editor scripts must live in `Assets/Scripts/Editor/` to be excluded from builds
-- `spacetime sql` and `spacetime call` commands print an UNSTABLE warning — that's expected
+- `spacetime sql` and `spacetime call` print an UNSTABLE warning — that's expected, not an error
+
+## Submodule CLAUDE.md Files
+
+Each submodule carries its own CLAUDE.md with context specific to that codebase:
+- `server/CLAUDE.md` — SpacetimeDB Rust SDK rules, common LLM mistakes, reducer/table patterns
+- `client/CLAUDE.md` — Unity C# conventions, SpacetimeDB C# SDK patterns, autogen workflow
+
+Claude Code loads both the root CLAUDE.md and the submodule CLAUDE.md when working inside a submodule directory.
+
+---
 
 ## Documentation Index
 
