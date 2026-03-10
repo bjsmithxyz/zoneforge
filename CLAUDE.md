@@ -105,7 +105,7 @@ Project-specific skills are loaded automatically by Claude Code when you describ
 | [docs/architecture/Client.md](docs/architecture/Client.md) | Unity project layout and SDK integration |
 | [docs/architecture/Server.md](docs/architecture/Server.md) | Table list, reducer conventions, build commands |
 | [docs/design/Detailed_Design.md](docs/design/Detailed_Design.md) | Full game design specification |
-| [docs/design/Roadmap.md](docs/design/Roadmap.md) | Sprint kanban across all 4 phases |
+| [docs/design/PROGRESS.md](docs/design/PROGRESS.md) | Task checklist and milestones across all phases |
 | [docs/guides/Getting_Started.md](docs/guides/Getting_Started.md) | Full environment setup |
 | [docs/guides/Client_Dev.md](docs/guides/Client_Dev.md) | Unity daily workflow |
 | [docs/guides/Server_Dev.md](docs/guides/Server_Dev.md) | Rust/SpacetimeDB daily workflow |

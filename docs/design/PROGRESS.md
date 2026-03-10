@@ -1,0 +1,230 @@
+# ZoneForge — Development Progress
+
+## Current Focus
+
+- [ ] Complete development environment setup (Rust toolchain, WASM target, SpacetimeDB CLI)
+- [ ] Define core tables: Player, Zone, EntityInstance
+- [ ] Define core reducers: create_player, move_player, create_zone, spawn_entity
+- [ ] Build and publish server module to local SpacetimeDB
+- [ ] Unity project setup with URP and SpacetimeDB SDK
+- [ ] Basic Zone Editor window (create zones with Grid + Tilemap)
+- [ ] Tile palette with ground layer painting
+
+---
+
+## Phase 1: Core Editor + SpacetimeDB Foundation
+
+### Group 1 — Environment & Foundation
+
+- [x] Roadmap and design document
+- [x] Install Unity Hub + Unity 2022.3 LTS with URP
+- [x] Start SpacetimeDB local server
+- [ ] Install Rust toolchain (rustc, cargo, wasm32-unknown-unknown target)
+- [ ] Install SpacetimeDB CLI
+- [ ] Initialise Git repositories (client + server submodules)
+- [ ] Configure VS Code with extensions
+
+### Group 2 — Server Core
+
+- [ ] Define `Player` table (id, identity, name, position, health)
+- [ ] Define `Zone` table (id, name, grid_width, grid_height)
+- [ ] Define `EntityInstance` table (id, zone_id, prefab_name, position, type)
+- [ ] `create_player` reducer
+- [ ] `move_player` reducer
+- [ ] `create_zone` reducer
+- [ ] `spawn_entity` reducer
+- [ ] Build and publish module to local server
+- [ ] Verify with `spacetime sql` / `spacetime call`
+
+### Group 3 — Unity Project & SDK
+
+- [ ] Create Unity project (2022.3 LTS, URP)
+- [ ] Basic ScriptableObject architecture (WorldData, ZoneVisualData)
+- [ ] Import test assets (character placeholder, prop placeholders)
+- [ ] Install SpacetimeDB C# SDK via Package Manager
+- [ ] SpacetimeDB connection manager (connect, subscribe, callbacks)
+- [ ] Verify Unity connects to local server and callbacks fire
+
+### Group 4 — Map Editor Basics
+
+- [ ] Zone Editor window (create zone → new scene with Grid + Tilemap)
+- [ ] ZoneController component
+- [ ] Tile palette setup (ground, decoration, collision layers)
+- [ ] Basic tile set (grass, dirt, stone)
+- [ ] Tile painting works in Scene view
+
+**Milestone: Unity connects to SpacetimeDB, zones can be created and painted**
+
+---
+
+## Phase 2: Entity System + Real-Time Sync
+
+### Group 5 — Entity Placement
+
+- [ ] Entity Palette editor window with thumbnails
+- [ ] Drag-and-drop entity placement in Scene view
+- [ ] Entity gizmos (visual indicators)
+- [ ] Subscribe to `EntityInstance` table (OnInsert callback)
+- [ ] Real-time entity spawning visible across clients
+
+### Group 6 — Player Movement
+
+- [ ] Player Controller — WASD input + Transform updates
+- [ ] `move_player` server-side validation
+- [ ] Subscribe to `Player` table (OnUpdate callback)
+- [ ] Client-side prediction + server reconciliation
+- [ ] NavMesh setup and collision detection (zone boundaries, walls)
+- [ ] Multi-client test: 2+ Unity clients in same zone
+
+**Milestone: Players move in real time across multiple clients**
+
+---
+
+## Phase 3: Combat + Server Authority
+
+### Group 7 — Combat Foundation
+
+- [ ] `Ability` table (id, damage, cooldown, mana_cost, range)
+- [ ] `StatusEffect` table (burn, freeze, stun, poison)
+- [ ] `CombatLog` table (timestamp, attacker, target, damage)
+- [ ] `use_ability` reducer (server-authoritative: validate range, cooldown, mana)
+- [ ] `apply_damage` reducer
+- [ ] Death and respawn logic
+- [ ] Combat VFX — projectiles (fireball, arrow prefabs)
+
+### Group 8 — Combat UI & Abilities
+
+- [ ] Ability hotbar UI (slots 1–5)
+- [ ] Cooldown indicators
+- [ ] Health bar UI (player and enemy)
+- [ ] Floating damage numbers
+- [ ] Melee attack ability
+- [ ] Fireball spell (ranged, burn DoT)
+- [ ] Heal spell (self or ally)
+- [ ] Object pooling for projectiles and VFX
+
+### Group 9 — Enemy AI (Basic)
+
+- [ ] Enemy AI — Idle, Chase, Attack states
+- [ ] Melee, ranged, and caster behavior variants
+- [ ] `AI State` table + `update_ai_state` reducer (server-side)
+- [ ] `spawn_enemy` / `despawn_enemy` reducers
+
+**Milestone: Server-authoritative combat working with 2+ players**
+
+---
+
+## Phase 4: Zone Stitching + Cloud Deployment
+
+### Group 10 — Zone Portals
+
+- [ ] `Portal` table (source_zone, dest_zone, spawn_point)
+- [ ] `enter_zone` reducer (zone transfer with validation)
+- [ ] Portal trigger volumes (Unity collision)
+- [ ] Zone loading UI and scene cleanup
+- [ ] Zone subscription management (subscribe/unsubscribe on transfer)
+- [ ] World Graph editor window (node-based zone visualisation)
+
+### Group 11 — Production Deployment
+
+- [ ] Create 3 zones: Village, Forest, Cave
+- [ ] Place and test portals between all zones
+- [ ] Multi-player zone transfer testing
+- [ ] SpacetimeDB Cloud account and CI/CD pipeline
+- [ ] Production deployment
+- [ ] Load testing (10+ concurrent players)
+
+**Milestone: Multi-zone world accessible via SpacetimeDB Cloud**
+
+---
+
+## Phase 5: Systems Polish
+
+### Group 12 — Triggers & Quests
+
+- [ ] `Trigger` table (trigger_type, zone_id, conditions, actions)
+- [ ] `OnEnter` and `OnInteract` trigger types
+- [ ] Condition system (has_item, quest_status, player_level)
+- [ ] Action system (spawn_entity, play_sound, give_item)
+- [ ] Visual Scripting UI for triggers
+- [ ] `Quest` table (objectives, rewards, prerequisites)
+- [ ] `QuestProgress` table (player_id, quest_id, objective_states)
+- [ ] Quest reducers: start, update_objective, complete
+- [ ] Quest UI — journal and dialogue tree
+- [ ] 3 interconnected quest chains
+
+### Group 13 — Inventory & Loot
+
+- [ ] `Item` table (item definitions)
+- [ ] `Inventory` table (player_id, item_id, quantity, slot)
+- [ ] `Equipment` table (weapon, armor, accessory slots)
+- [ ] Inventory, equip, and loot reducers
+- [ ] Inventory grid UI with drag-and-drop and tooltips
+- [ ] Equipment character sheet UI
+- [ ] Loot table system and drop-on-death
+- [ ] Pickup item reducer (collision-based)
+
+### Group 14 — Interiors & Atmosphere
+
+- [ ] Interior zone type (building interiors as separate zones)
+- [ ] Furniture placement editor tool
+- [ ] Door/window prefabs with state table + toggle reducer
+- [ ] Lighting preset ScriptableObjects + runtime application
+- [ ] Baked lightmaps for interiors
+- [ ] Dynamic lights (torches, magic orbs)
+- [ ] Post-processing profiles per zone
+- [ ] `WeatherState` table + `change_weather` reducer
+- [ ] Ambient sound system
+
+**Milestone: Polished multiplayer village with quests, inventory, and atmosphere**
+
+---
+
+## Phase 6: Advanced Multiplayer (Future)
+
+### Group 15 — Party System
+
+- [ ] `Party` / `PartyInvite` tables
+- [ ] Party reducers (create, invite, join, leave)
+- [ ] Shared quest progress and loot distribution
+- [ ] Party UI (member list with health bars)
+- [ ] Party teleport
+
+### Group 16 — PvP & Guilds
+
+- [ ] `PvPFlag` table + toggle reducer
+- [ ] PvP zone designation and duel system
+- [ ] `Leaderboard` table + post-combat update reducer
+- [ ] `Guild` / `GuildInvite` / `GuildPermissions` tables
+- [ ] Guild reducers (create, invite, rank management)
+- [ ] Guild bank and guild hall zone
+- [ ] Guild UI (roster, chat channel)
+
+### Group 17 — Economy & World Events
+
+- [ ] `AuctionHouse` table (listings, bids, buyouts)
+- [ ] Trade, bid, and buyout reducers
+- [ ] Currency system (gold, gems, tokens)
+- [ ] `Crafting` table + craft reducer
+- [ ] `WorldEvent` table + trigger reducer
+- [ ] World boss spawning and dynamic events
+- [ ] Seasonal content and achievement system
+
+**Milestone: Full multiplayer RPG feature set complete**
+
+---
+
+## Risks
+
+| Priority | Risk | Mitigation |
+|----------|------|------------|
+| High | Client-server desync | Server reconciliation |
+| High | Network latency | Client-side prediction |
+| High | Cheating exploits | Server authority on all game logic |
+| Medium | Performance under load | Early profiling, object pooling |
+| Medium | Scope creep | Strict phase ordering, milestones gate next phase |
+| Medium | Cloud costs | Usage monitoring |
+| Low | Version compatibility | Lock dependency versions in docs |
+| Low | Data loss | SpacetimeDB commit log + automated backups |
+| Resolved | Technology selection | SpacetimeDB + Rust + Unity |
+| Resolved | Architecture design | Client-server hybrid, autogen bindings |
