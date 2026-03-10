@@ -23,9 +23,19 @@ Or if already cloned:
 git submodule update --init --recursive
 ```
 
+## Documentation
+
+| Doc | Description |
+| --- | ----------- |
+| [Architecture Overview](docs/architecture/Overview.md) | System diagram, data flow, repo layout |
+| [Getting Started](docs/guides/Getting_Started.md) | Full environment setup (Unity, Rust, SpacetimeDB) |
+| [Design Document](docs/design/Detailed_Design.md) | Full game design and systems specification |
+| [Roadmap](docs/design/Roadmap.md) | Phases, sprints, and milestones |
+| [docs/](docs/) | All documentation |
+
 ## Stack
 
-- **Client**: Unity 6 (URP), C#, SpacetimeDB C# SDK
+- **Client**: Unity 2022.3 LTS (URP), C#, SpacetimeDB C# SDK
 - **Server**: Rust, SpacetimeDB 1.x (resolved: 1.12.0)
 
 ## Submodule Workflow
@@ -33,7 +43,7 @@ git submodule update --init --recursive
 When you push changes to `client` or `server`, update the parent repo to track the new commits:
 
 ```bash
-cd /home/beek/repos/ZoneForge
+cd /path/to/zoneforge
 git add client server
 git commit -m "Update submodules"
 git push
