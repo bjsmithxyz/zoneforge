@@ -8,8 +8,14 @@ ZoneForge is a multiplayer-ready isometric RPG world editor. Unity client + Spac
 
 ```
 zoneforge/           ← you are here (umbrella repo)
+├── .claude/
+│   └── skills/      ← umbrella-scope Claude Code skills
 ├── client/          ← Unity 2022.3 LTS project (submodule → zoneforge-client)
+│   └── .claude/
+│       └── skills/  ← client-scope Claude Code skills
 ├── server/          ← SpacetimeDB Rust WASM module (submodule → zoneforge-server)
+│   └── .claude/
+│       └── skills/  ← server-scope Claude Code skills
 └── docs/            ← all documentation
     ├── design/      ← what the game is and where it's going
     ├── architecture/ ← how the systems are built
@@ -75,6 +81,22 @@ Claude Code loads both the root CLAUDE.md and the submodule CLAUDE.md when worki
 
 ---
 
+## Claude Skills
+
+Project-specific skills are loaded automatically by Claude Code when you describe a relevant task. See [docs/guides/Claude_Skills.md](docs/guides/Claude_Skills.md) for the full reference.
+
+| Skill | Scope | Triggers on |
+| ----- | ----- | ----------- |
+| `zoneforge-deploy` | Root | deploy, publish, rebuild server |
+| `zoneforge-new-feature` | Root | add feature, implement X, store X |
+| `zoneforge-debug` | Root | something not working, callbacks not firing, can't connect |
+| `spacetimedb-rust-table` | Server | add table, define schema, new entity |
+| `spacetimedb-rust-reducer` | Server | add reducer, server action, game mechanic |
+| `unity-spacetimedb-subscribe` | Client | subscribe, callbacks, react to server data |
+| `unity-autogen-refresh` | Client | regenerate bindings, spacetime generate |
+
+---
+
 ## Documentation Index
 
 | Doc | Purpose |
@@ -87,4 +109,5 @@ Claude Code loads both the root CLAUDE.md and the submodule CLAUDE.md when worki
 | [docs/guides/Getting_Started.md](docs/guides/Getting_Started.md) | Full environment setup |
 | [docs/guides/Client_Dev.md](docs/guides/Client_Dev.md) | Unity daily workflow |
 | [docs/guides/Server_Dev.md](docs/guides/Server_Dev.md) | Rust/SpacetimeDB daily workflow |
+| [docs/guides/Claude_Skills.md](docs/guides/Claude_Skills.md) | Claude Code skills — when and how they apply |
 | [docs/decisions/](docs/decisions/) | Architecture Decision Records |

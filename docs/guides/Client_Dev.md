@@ -72,6 +72,18 @@ Editor-only scripts go in `Assets/Scripts/Editor/`. They are excluded from game 
 | rust-analyzer errors in server code unrelated to client | Open server in a separate VS Code window |
 | Editor window missing from menu | Unity didn't recompile — check Console for C# errors |
 
+## Claude Code Skills
+
+When working in `client/` with Claude Code, two skills apply automatically:
+
+- **`unity-spacetimedb-subscribe`** — correct subscription ordering, callback registration, and `FrameTick` usage
+- **`unity-autogen-refresh`** — regenerating C# bindings after server schema changes
+
+For the full deploy pipeline Claude uses **`zoneforge-deploy`**.
+For debugging when things aren't working, Claude uses **`zoneforge-debug`**.
+
+See [Claude_Skills.md](Claude_Skills.md) for the full skills reference.
+
 ## See Also
 
 - [../architecture/Client.md](../architecture/Client.md) — Client architecture detail

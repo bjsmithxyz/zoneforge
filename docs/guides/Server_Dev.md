@@ -123,6 +123,18 @@ spacetime generate --lang csharp \
 | Port 3000 in use | `sudo lsof -i :3000` → kill or use `spacetime start --listen-addr 127.0.0.1:3001` |
 | rust-analyzer not activating | Check `rust-analyzer.linkedProjects` points to `./Cargo.toml` |
 
+## Claude Code Skills
+
+When working in `server/` with Claude Code, two skills apply automatically:
+
+- **`spacetimedb-rust-table`** — correct table definition syntax, attributes, and common mistakes
+- **`spacetimedb-rust-reducer`** — correct reducer signatures, update patterns, and determinism rules
+
+For the full deploy pipeline (build → publish → bindings) Claude uses **`zoneforge-deploy`**.
+For debugging connection or data issues, Claude uses **`zoneforge-debug`**.
+
+See [Claude_Skills.md](Claude_Skills.md) for the full skills reference.
+
 ## See Also
 
 - [../architecture/Server.md](../architecture/Server.md) — Module architecture, table list, conventions
