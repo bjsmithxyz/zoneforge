@@ -6,9 +6,11 @@
 - [x] Define core tables: Player, Zone, EntityInstance
 - [x] Define core reducers: create_player, move_player, create_zone, spawn_entity
 - [x] Build and publish server module to local SpacetimeDB
-- [x] Unity project setup with URP and SpacetimeDB SDK
-- [x] Basic Zone Editor window (create zones with Grid + Tilemap)
-- [x] Tile palette with ground layer painting
+- [x] Unity 3D URP projects: game client (zoneforge-client) + standalone editor (zoneforge-editor)
+- [x] Three-repo structure: server + client + editor submodules
+- [x] SpacetimeDB C# SDK connected in both Unity projects
+
+**Next:** Phase 2 Group 5 — Entity Placement (in zoneforge-editor)
 
 ---
 
@@ -17,11 +19,11 @@
 ### Group 1 — Environment & Foundation
 
 - [x] Roadmap and design document
-- [x] Install Unity Hub + Unity 2022.3 LTS with URP
+- [x] Install Unity Hub + Unity 2022.3 LTS with 3D URP
 - [x] Start SpacetimeDB local server
 - [x] Install Rust toolchain (rustc, cargo, wasm32-unknown-unknown target)
 - [x] Install SpacetimeDB CLI
-- [x] Initialise Git repositories (client + server submodules)
+- [x] Initialise Git repositories (server + client + editor submodules)
 - [x] Configure VS Code with extensions
 
 ### Group 2 — Server Core
@@ -38,34 +40,35 @@
 
 ### Group 3 — Unity Project & SDK
 
-- [x] Create Unity project (2022.3 LTS, URP)
-- [x] Basic ScriptableObject architecture (WorldData, ZoneVisualData)
-- [x] Import test assets (character placeholder, prop placeholders)
-- [x] Install SpacetimeDB C# SDK via Package Manager
+- [x] Create Unity projects (2022.3 LTS, 3D URP): zoneforge-client + zoneforge-editor
+- [x] Basic ScriptableObject architecture (WorldData, ZoneVisualData) in both projects
+- [x] Install SpacetimeDB C# SDK via Package Manager in both projects
 - [x] SpacetimeDB connection manager (connect, subscribe, callbacks)
 - [x] Verify Unity connects to local server and callbacks fire
 
-### Group 4 — Map Editor Basics
+### Group 4 — Editor Foundation (zoneforge-editor)
 
-- [x] Zone Editor window (create zone → new scene with Grid + Tilemap)
-- [x] ZoneController component
-- [x] Tile palette setup (ground, decoration, collision layers)
-- [x] Basic tile set (grass, dirt, stone)
-- [x] Tile painting works in Scene view
+- [x] ZoneController component (`client/` and `editor/`)
+- [x] Project structure: Editor scripts separated into zoneforge-editor
+- [x] Placeholder tile PNG generator (dev tool in editor/)
+- [x] Placeholder sprite PNG generator (dev tool in editor/)
+- [x] Three-repo architecture established and confirmed 3D URP
 
-**Milestone: Unity connects to SpacetimeDB, zones can be created and painted**
+**Milestone: Unity connects to SpacetimeDB, three-repo structure live, 3D URP confirmed**
 
 ---
 
 ## Phase 2: Entity System + Real-Time Sync
 
-### Group 5 — Entity Placement
+### Group 5 — Entity Placement (zoneforge-editor)
 
-- [ ] Entity Palette editor window with thumbnails
-- [ ] Drag-and-drop entity placement in Scene view
-- [ ] Entity gizmos (visual indicators)
+- [ ] Runtime zone creation UI (UIToolkit panel replacing EditorWindow)
+- [ ] 3D tile palette panel with prefab thumbnails
+- [ ] Raycast-based tile painting on X/Z grid plane
+- [ ] Entity palette panel with sprite thumbnails
+- [ ] Click-to-place entity placement (calls `spawn_entity` reducer)
 - [ ] Subscribe to `EntityInstance` table (OnInsert callback)
-- [ ] Real-time entity spawning visible across clients
+- [ ] Real-time entity spawning visible in both editor and game client
 
 ### Group 6 — Player Movement
 

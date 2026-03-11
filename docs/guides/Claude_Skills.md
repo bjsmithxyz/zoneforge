@@ -17,6 +17,7 @@ Skills are scoped to the part of the project they apply to:
 | Umbrella repo (full-stack workflows) | `zoneforge/.claude/skills/` |
 | Server submodule | `zoneforge/server/.claude/skills/` |
 | Client submodule | `zoneforge/client/.claude/skills/` |
+| Editor submodule | `zoneforge/editor/.claude/skills/` |
 
 ---
 
@@ -27,7 +28,7 @@ Skills are scoped to the part of the project they apply to:
 #### `zoneforge-deploy`
 **Location:** `.claude/skills/zoneforge-deploy/SKILL.md`
 
-Full server pipeline: build → publish → regenerate bindings. Handles the decision about whether `--delete-data` is needed for breaking schema changes and ensures the Unity client is prompted to Reimport All when bindings change.
+Full server pipeline: build → publish → regenerate bindings. Handles the decision about whether `--delete-data` is needed for breaking schema changes and ensures the Unity project is prompted to Reimport All when bindings change.
 
 **Triggers on:** "deploy", "publish", "rebuild server", "push changes", finishing edits to `lib.rs`
 
@@ -36,7 +37,7 @@ Full server pipeline: build → publish → regenerate bindings. Handles the dec
 #### `zoneforge-new-feature`
 **Location:** `.claude/skills/zoneforge-new-feature/SKILL.md`
 
-Guides implementing any feature that spans server and client. Walks through the full 8-step sequence: define table → define reducer → build/publish → regenerate bindings → subscribe in Unity → register callbacks → call reducer from UI → render data.
+Guides implementing any feature that spans server and client/editor. Walks through the full 8-step sequence: define table → define reducer → build/publish → regenerate bindings → subscribe in Unity → register callbacks → call reducer from UI → render data.
 
 The most important skill in the project — it prevents the #1 mistake in SpacetimeDB development: implementing the server side but forgetting to wire up the client.
 
@@ -87,6 +88,8 @@ Correct C# patterns for subscribing to SpacetimeDB tables and registering row ca
 
 Prevents the most common Unity/SpacetimeDB issues: missing `FrameTick()`, subscribing too early, and registering callbacks before the subscription is applied.
 
+**Also applies to the editor submodule** — the same SDK patterns are required there.
+
 **Triggers on:** "subscribe to table", "listen for updates", "callbacks not firing", "react to server data", "wire up callbacks"
 
 ---
@@ -96,7 +99,15 @@ Prevents the most common Unity/SpacetimeDB issues: missing `FrameTick()`, subscr
 
 Regenerates the C# client bindings in `Assets/Scripts/autogen/` after a server schema change, and prompts the Unity Reimport All step. Includes the prerequisite chain (build → publish → generate) and the rule never to edit autogen files manually.
 
+**Also applies to the editor submodule** — run the same command from `editor/` to update editor bindings.
+
 **Triggers on:** "regenerate bindings", "schema changed", "autogen out of date", "spacetime generate", Unity errors after server changes
+
+---
+
+### Editor submodule (`editor/`)
+
+Editor-specific skills are planned for Phase 2 as runtime world-building patterns are established. For now, the client skills above (`unity-spacetimedb-subscribe`, `unity-autogen-refresh`) apply to the editor submodule as well — the SpacetimeDB C# SDK patterns are identical.
 
 ---
 

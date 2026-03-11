@@ -6,7 +6,7 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 
 **Module name:** `zoneforge-server`
 **Language:** Rust (compiled to `wasm32-unknown-unknown`)
-**Entry point:** `server/src/lib.rs`
+**Entry point:** `server/spacetimedb/src/lib.rs`
 
 ## Core Tables
 
@@ -29,15 +29,15 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 |---------|--------|---------|
 | `create_player(name)` | Client on connect | Register new player |
 | `move_player(x, y)` | Client on input | Server-validated movement |
-| `create_zone(name, w, h)` | Editor tool | Create new zone |
-| `spawn_entity(zone_id, prefab, x, y, type)` | Editor tool | Place entity in zone |
+| `create_zone(name, w, h)` | Editor on zone creation | Create new zone |
+| `spawn_entity(zone_id, prefab, x, y, type)` | Editor on entity placement | Place entity in zone |
 
 ## Module Conventions
 
 ```rust
-// Tables use #[table(name = snake_case, public)]
+// Tables use #[table(accessor = snake_case, public)]
 // Do NOT add #[derive(SpacetimeType)] to table structs — only to embedded types
-#[table(name = player, public)]
+#[table(accessor = player, public)]
 pub struct Player { ... }
 
 // Custom embedded types (not tables) use #[derive(SpacetimeType)]
@@ -45,14 +45,15 @@ pub struct Player { ... }
 pub enum EntityType { StaticProp, Interactive, NPC, Enemy, Player, TriggerVolume }
 
 // Reducers access tables via ctx.db.<table_name>()
-// Look up by unique field: ctx.db.player().identity().find(ctx.sender)
+// Look up by unique field: ctx.db.player().identity().find(ctx.sender())
 // Update: ctx.db.player().id().update(Player { ..old_player, new_field: value })
+// Note: ctx.sender() is a METHOD call in SpacetimeDB 2.x (not a field)
 ```
 
 ## Build & Publish
 
 ```bash
-# Build (compiles Rust → WASM)
+# Build (compiles Rust → WASM) — run from server/
 spacetime build
 
 # Publish to local dev server
@@ -68,25 +69,27 @@ spacetime publish --server local zoneforge-server --delete-data
 
 ```
 server/
-├── .cargo/
-│   └── config.toml        ← sets default target: wasm32-unknown-unknown
-├── Cargo.toml             ← spacetimedb = "1.0", crate-type = ["cdylib"]
-└── src/
-    └── lib.rs             ← all tables and reducers
+├── spacetime.json         ← points module-path to ./spacetimedb
+└── spacetimedb/
+    ├── .cargo/
+    │   └── config.toml    ← sets default target: wasm32-unknown-unknown
+    ├── Cargo.toml         ← spacetimedb = "2.0", crate-type = ["cdylib"]
+    └── src/
+        └── lib.rs         ← all tables and reducers
 ```
 
 As the module grows, `lib.rs` will be split into modules (e.g. `player.rs`, `combat.rs`, `zone.rs`) and referenced from `lib.rs` via `mod`.
 
 ## Client Binding Generation
 
-After any schema change, regenerate the C# bindings for Unity:
+After any schema change, regenerate the C# bindings for both Unity projects:
 
 ```bash
-# Run from the Unity client root (ZoneForge/client/)
+# Run from client/ or editor/ directory
 spacetime generate \
   --lang csharp \
   --out-dir Assets/Scripts/autogen \
-  --bin-path ../server/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
+  --bin-path ../server/spacetimedb/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
 ```
 
 The generated files in `Assets/Scripts/autogen/` are not hand-edited — they are overwritten on each generation.

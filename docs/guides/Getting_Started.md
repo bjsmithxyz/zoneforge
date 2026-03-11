@@ -369,8 +369,9 @@ cd ~/Projects/ZoneForge
 
 # The structure will be:
 # ZoneForge/
-# ├── client/          (Unity project - already created)
-# └── server/          (SpacetimeDB Rust module - create now)
+# ├── client/          (Unity project)
+# ├── editor/          (Unity project)
+# └── server/          (SpacetimeDB Rust module)
 ```
 
 ### Initialize Server (SpacetimeDB) Project
@@ -481,7 +482,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-spacetimedb = "1.0"
+spacetimedb = "2.0"
 log = "0.4"
 
 [profile.release]
@@ -499,7 +500,7 @@ use spacetimedb::{table, reducer, ReducerContext, Identity, Table};
 // Define a simple Player table.
 // Note: #[table(...)] is the table attribute — do NOT also add #[derive(SpacetimeType)].
 // SpacetimeType is only for custom embedded types used as fields inside table rows.
-#[table(name = player, public)]
+#[table(accessor = player, public)]
 pub struct Player {
     #[primary_key]
     #[auto_inc]
@@ -516,7 +517,7 @@ pub struct Player {
 }
 
 // Define a Zone table
-#[table(name = zone, public)]
+#[table(accessor = zone, public)]
 pub struct Zone {
     #[primary_key]
     #[auto_inc]
@@ -531,7 +532,7 @@ pub struct Zone {
 pub fn create_player(ctx: &ReducerContext, name: String) {
     let player = Player {
         id: 0, // auto_inc will assign
-        identity: ctx.sender,
+        identity: ctx.sender(),
         name,
         zone_id: 1, // Default starting zone
         position_x: 0.0,
@@ -541,13 +542,13 @@ pub fn create_player(ctx: &ReducerContext, name: String) {
     };
 
     ctx.db.player().insert(player);
-    log::info!("Player created: {}", ctx.sender);
+    log::info!("Player created: {}", ctx.sender());
 }
 
 // Reducer to move a player
 #[reducer]
 pub fn move_player(ctx: &ReducerContext, new_x: f32, new_y: f32) {
-    let player_identity = ctx.sender;
+    let player_identity = ctx.sender();
 
     // .identity() works here because the field is marked #[unique] above.
     if let Some(player) = ctx.db.player().identity().find(player_identity) {
@@ -846,7 +847,7 @@ Now that your environment is set up, you're ready to start Sprint 1:
 
     ```bash
     cd /path/to/ZoneForge/client   # adjust to your actual Unity project path
-    spacetime generate --lang csharp --out-dir Assets/Scripts/autogen --bin-path ../server/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
+    spacetime generate --lang csharp --out-dir Assets/Scripts/autogen --bin-path ../server/spacetimedb/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
     ```
 
     This reads from the compiled WASM binary produced by `spacetime build`. If you have not built recently, run `spacetime build` from `server/` first.
@@ -952,88 +953,19 @@ Now that your environment is set up, you're ready to start Sprint 1:
 
     If you see the row, client-server connectivity is confirmed. Press **Stop** (■) in Unity to exit Play mode.
 
-6. **Start Basic Map Editor**
+6. **Open the ZoneForge Editor**
 
-    This creates a custom Unity Editor Window that will eventually become the ZoneForge map editor. The first milestone is getting an empty editor window to open — no tile painting yet, just the shell.
+    World building (zone creation, tile painting, entity placement) is done in the **standalone `zoneforge-editor` application** — not in the game client.
 
-    **A — Enable the 2D Tilemap package**
-
-    Unity's Tilemap system is a built-in package but may need to be enabled:
+    Open the editor project in Unity Hub:
 
     ```text
-    Window → Package Manager → Unity Registry (dropdown at top-left)
-    → search "2D Tilemap Editor" → Install (if not already installed)
+    Unity Hub → Projects → Add → navigate to editor/
     ```
 
-    **B — Create the editor folder structure**
+    Then open it and press **Play** to launch the editor in Play mode. It will connect to your local SpacetimeDB instance automatically.
 
-    Editor scripts must live inside a folder named `Editor` for Unity to treat them as editor-only code (they won't be included in builds):
-
-    ```text
-    Right-click Assets/Scripts/ → Create → Folder → name it "Editor"
-    ```
-
-    **C — Create the Editor Window script**
-
-    Right-click `Assets/Scripts/Editor/` → `Create → C# Script` → name it `MapEditorWindow`.
-
-    Open it in VS Code and replace the entire contents with:
-
-    ```csharp
-    using UnityEditor;
-    using UnityEngine;
-
-    public class MapEditorWindow : EditorWindow
-    {
-        [MenuItem("ZoneForge/Map Editor")]
-        public static void OpenWindow()
-        {
-            MapEditorWindow window = GetWindow<MapEditorWindow>();
-            window.titleContent = new GUIContent("Map Editor");
-            window.minSize = new Vector2(400, 300);
-            window.Show();
-        }
-
-        private void OnGUI()
-        {
-            GUILayout.Label("ZoneForge Map Editor", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-            GUILayout.Label("Tilemap tools will appear here.", EditorStyles.helpBox);
-        }
-    }
-    ```
-
-    Save the file and wait for Unity to recompile (spinner bottom-right).
-
-    **D — Open the editor window**
-
-    Once compilation is complete, a new menu item will appear in the Unity menu bar:
-
-    ```text
-    ZoneForge → Map Editor
-    ```
-
-    Click it. A dockable panel titled **Map Editor** should open. You can dock it alongside the Scene or Game view.
-
-    **Expected result:** An empty panel showing the label "ZoneForge Map Editor" and the placeholder message. This confirms the Editor Window pipeline is working and the `[MenuItem]` attribute is wired up correctly.
-
-    **E — Add a Tilemap to the scene**
-
-    With the editor window confirmed working, add the Tilemap infrastructure to the scene:
-
-    ```text
-    Hierarchy → right-click → 2D Object → Tilemap → Rectangular
-    ```
-
-    This creates two objects in the Hierarchy:
-    - **Grid** — the parent container that defines cell size and layout
-    - **Tilemap** — the child that holds actual tile data
-
-    Rename them to `ZoneGrid` and `ZoneTilemap` respectively (right-click → Rename in the Hierarchy).
-
-    The Tilemap Renderer component on `ZoneTilemap` controls how tiles are drawn. Leave settings at their defaults for now.
-
-    > **Next step:** The tile painting UI (brush, tile palette, zone data binding) will be built iteratively on top of this foundation.
+    > See [Editor_Dev.md](Editor_Dev.md) for the full editor development workflow.
 
 ### Recommended Learning Resources
 
