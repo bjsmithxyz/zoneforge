@@ -4,3 +4,6 @@
 [submodule "server"]
 	path = server
 	url = https://github.com/bjsmithxyz/zoneforge-server
+[submodule "editor"]
+	path = editor
+	url = https://github.com/bjsmithxyz/zoneforge-editor.git
