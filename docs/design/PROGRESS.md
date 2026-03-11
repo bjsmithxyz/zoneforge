@@ -10,7 +10,7 @@
 - [x] Three-repo structure: server + client + editor submodules
 - [x] SpacetimeDB C# SDK connected in both Unity projects
 
-**Next:** Phase 2 Group 5 — Entity Placement (in zoneforge-editor)
+**Next:** Phase 2 Group 5 — 3D tile palette panel (in zoneforge-editor)
 
 ---
 
@@ -62,8 +62,8 @@
 
 ### Group 5 — Entity Placement (zoneforge-editor)
 
-- [ ] Runtime zone creation UI (UIToolkit panel replacing EditorWindow)
-- [ ] 3D tile palette panel with prefab thumbnails
+- [x] Runtime zone creation UI (UIToolkit panel replacing EditorWindow)
+- [x] 3D tile palette panel with prefab thumbnails
 - [ ] Raycast-based tile painting on X/Z grid plane
 - [ ] Entity palette panel with sprite thumbnails
 - [ ] Click-to-place entity placement (calls `spawn_entity` reducer)
