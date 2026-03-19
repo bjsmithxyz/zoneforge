@@ -4,14 +4,14 @@
 
 ZoneForge consists of three applications sharing a single SpacetimeDB backend:
 
-```
+```text
 ┌──────────────────────────┐   ┌──────────────────────────┐
 │   zoneforge-editor       │   │   zoneforge-client        │
 │   (Standalone Unity app) │   │   (Standalone Unity app)  │
 │                          │   │                           │
 │  World-building tools:   │   │  Game runtime:            │
 │  - Zone creation         │   │  - Player movement        │
-│  - 3D tile placement     │   │  - Combat                 │
+│  - Terrain painting      │   │  - Combat                 │
 │  - Entity placement      │   │  - UI / inventory         │
 │  - Zone management       │   │  - Rendering              │
 └────────────┬─────────────┘   └────────────┬──────────────┘
@@ -25,12 +25,13 @@ ZoneForge consists of three applications sharing a single SpacetimeDB backend:
              │  ┌────────────────────────────┐  │
              │  │  Tables (authoritative     │  │
              │  │  game state)               │  │
-             │  │  Player, Zone, Entity...   │  │
+             │  │  Player, Zone,             │  │
+             │  │  TerrainChunk, Entity...   │  │
              │  └────────────────────────────┘  │
              │  ┌────────────────────────────┐  │
              │  │  Reducers (mutations)      │  │
-             │  │  create_zone, move_player  │  │
-             │  │  spawn_entity, etc.        │  │
+             │  │  create_zone, paint_terrain│  │
+             │  │  move_player, spawn_entity │  │
              │  └────────────────────────────┘  │
              └──────────────────────────────────┘
 ```
@@ -52,16 +53,28 @@ ZoneForge consists of three applications sharing a single SpacetimeDB backend:
 ## Data Flow
 
 **Editor authoring:**
-```
+
+```text
 Designer Input → Editor UI → Reducer Call → SpacetimeDB → Table Update → All Subscribers
 ```
 
 **Player gameplay:**
-```
+
+```text
 Player Input → Client → Reducer Call → SpacetimeDB → Table Update → All Clients
 ```
 
+Example (terrain painting in editor):
+
+1. Designer clicks and drags on terrain — `TerrainPainter` raycasts to the Mesh
+2. Brush modifies in-memory `TerrainChunkData` (height/splat arrays)
+3. Editor calls `paint_terrain(zone_id, chunk_x, chunk_z, height_data, splat_data)` reducer
+4. Server updates the `TerrainChunk` table row
+5. SpacetimeDB pushes diff to all subscribers of `SELECT * FROM terrain_chunk`
+6. All Unity clients receive `OnUpdate` callback; `TerrainRenderer` rebuilds the Mesh
+
 Example (player movement):
+
 1. Player presses W — Unity calls `move_player(new_x, new_z)` reducer
 2. Server validates position (bounds, collision)
 3. Server updates `Player` table row
@@ -70,14 +83,14 @@ Example (player movement):
 
 ## Repository Structure
 
-```
+```text
 zoneforge/                   ← umbrella repo
 ├── client/                  ← Unity 3D URP game client (submodule)
 │   └── Assets/
 │       ├── Scripts/
-│       │   ├── Data/        ← ScriptableObjects (WorldData, ZoneVisualData)
-│       │   ├── Network/     ← SpacetimeDB connection management
-│       │   ├── Zone/        ← ZoneController, zone runtime logic
+│       │   ├── Data/        ← WorldData, ZoneVisualData, TerrainChunkData
+│       │   ├── Network/     ← SpacetimeDBManager (Zone, TerrainChunk, EntityInstance)
+│       │   ├── Zone/        ← ZoneController, TerrainRenderer, WaterRenderer
 │       │   └── autogen/     ← Generated C# bindings (spacetime generate)
 │       └── Art/
 │           ├── Models/
@@ -85,12 +98,10 @@ zoneforge/                   ← umbrella repo
 ├── editor/                  ← Unity 3D URP standalone world editor (submodule)
 │   └── Assets/
 │       ├── Scripts/
-│       │   ├── Runtime/     ← MonoBehaviours, editor managers
-│       │   ├── Data/        ← ScriptableObjects (WorldData, ZoneVisualData)
+│       │   ├── Runtime/     ← SpacetimeDBManager, TerrainRenderer, TerrainPainter, brush classes, UI panels
+│       │   ├── Data/        ← WorldData, ZoneVisualData, TerrainChunkData
 │       │   └── autogen/     ← Generated C# bindings (spacetime generate)
-│       └── Art/
-│           ├── Tiles/       ← 3D tile prefabs
-│           └── Sprites/     ← Entity thumbnails
+│       └── UI/              ← ZoneCreationPanel + TilePalettePanel (uxml/uss)
 └── server/                  ← SpacetimeDB Rust module (submodule)
     └── spacetimedb/
         └── src/

@@ -13,7 +13,8 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 | Table | Key Fields | Purpose |
 |-------|-----------|---------|
 | `Player` | `id` (PK, auto_inc), `identity` (unique) | Player state: position, health, zone |
-| `Zone` | `id` (PK, auto_inc), `name` | Zone metadata: dimensions |
+| `Zone` | `id` (PK, auto_inc), `name` | Zone metadata: dimensions, `water_level` |
+| `TerrainChunk` | `id` (PK, auto_inc), `zone_id`, `chunk_x`, `chunk_z` | Per-chunk heightmap (`height_data` byte[]) and splatmap (`splat_data` byte[]) |
 | `EntityInstance` | `id` (PK, auto_inc), `zone_id` | Placed entities: props, NPCs, enemies |
 
 **Planned tables** (added per phase):
@@ -29,7 +30,8 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 |---------|--------|---------|
 | `create_player(name)` | Client on connect | Register new player |
 | `move_player(x, y)` | Client on input | Server-validated movement |
-| `create_zone(name, w, h)` | Editor on zone creation | Create new zone |
+| `create_zone(name, w, h, water_level)` | Editor on zone creation | Create zone + initialise flat `TerrainChunk` rows for every chunk in the grid |
+| `paint_terrain(zone_id, chunk_x, chunk_z, height_data, splat_data)` | Editor on brush stroke | Update a chunk's heightmap and/or splatmap |
 | `spawn_entity(zone_id, prefab, x, y, type)` | Editor on entity placement | Place entity in zone |
 
 ## Module Conventions
