@@ -9,8 +9,10 @@
 - [x] Unity 3D URP projects: game client (zoneforge-client) + standalone editor (zoneforge-editor)
 - [x] Three-repo structure: server + client + editor submodules
 - [x] SpacetimeDB C# SDK connected in both Unity projects
+- [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
+- [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
 
-**Next:** Phase 2 Group 5 — 3D tile palette panel (in zoneforge-editor)
+**Next:** Phase 2 Group 5 — Entity palette panel and click-to-place entity placement
 
 ---
 
@@ -60,11 +62,18 @@
 
 ## Phase 2: Entity System + Real-Time Sync
 
-### Group 5 — Entity Placement (zoneforge-editor)
+### Group 5 — Terrain System + Entity Placement (zoneforge-editor)
 
-- [x] Runtime zone creation UI (UIToolkit panel replacing EditorWindow)
-- [x] 3D tile palette panel with prefab thumbnails
-- [ ] Raycast-based tile painting on X/Z grid plane
+- [x] Runtime zone creation UI (UIToolkit panel, `ZoneCreationPanel.cs` + `ZoneCreationPanel.uxml/uss`)
+- [x] Terrain system — server tables and reducers:
+  - `TerrainChunk` table (`zone_id`, `chunk_x`, `chunk_z`, `height_data` byte[], `splat_data` byte[])
+  - `paint_terrain` reducer (height raise/lower/smooth + splat layer painting)
+  - `create_zone` updated: initialises flat `TerrainChunk` rows for the whole zone on creation
+- [x] Terrain system — editor runtime (`TerrainChunkData`, `TerrainBrush`, `HeightBrush`, `TextureBrush`, `CombinedBrush`, `TerrainPainter`, `TilePalettePanel`)
+- [x] Terrain system — rendering (`TerrainRenderer` mesh from height data, `WaterRenderer` flat mesh)
+- [x] Terrain system — client mirror (`TerrainRenderer`/`WaterRenderer`/`TerrainChunkData` in `zoneforge-client`)
+- [x] Assembly definition chain: `ZoneForgeAutogen.asmdef` → `ZoneForgeRuntime.asmdef` → `EditModeTests.asmdef`
+- [x] UI stylesheet fix: both panels styled and non-overlapping (Zone Manager top-left, Brush panel top-right)
 - [ ] Entity palette panel with sprite thumbnails
 - [ ] Click-to-place entity placement (calls `spawn_entity` reducer)
 - [ ] Subscribe to `EntityInstance` table (OnInsert callback)
