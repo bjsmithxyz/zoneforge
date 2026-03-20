@@ -49,7 +49,7 @@ rust-analyzer status appears in the bottom status bar. Hover over any type in `l
 ## Adding a Table
 
 ```rust
-#[table(name = my_table, public)]
+#[table(accessor = my_table, public)]
 pub struct MyTable {
     #[primary_key]
     #[auto_inc]
@@ -73,7 +73,7 @@ pub fn my_action(ctx: &ReducerContext, arg: String) {
 }
 ```
 
-- Look up by unique field: `ctx.db.player().identity().find(ctx.sender)`
+- Look up by unique field: `ctx.db.player().identity().find(ctx.sender())`
 - Update a row: `ctx.db.player().id().update(Player { ..old, field: new_val })`
 
 ## Testing with the CLI
@@ -107,10 +107,10 @@ This is non-critical. The module builds and runs correctly without it. For produ
 3. Regenerate Unity client bindings:
 
 ```bash
-cd ~/Projects/ZoneForge/client
+# Run from client/ or editor/ directory
 spacetime generate --lang csharp \
   --out-dir Assets/Scripts/autogen \
-  --bin-path ../server/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
+  --bin-path ../server/spacetimedb/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
 ```
 
 ## Common Issues

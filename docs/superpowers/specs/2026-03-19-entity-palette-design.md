@@ -52,12 +52,12 @@ Four new components plus one plain data class are added to the editor. No server
 | --- | --- | --- | --- |
 | Guard | `guard` | NPC | Blue |
 | Merchant | `merchant` | NPC | Cyan |
-| Skeleton | `skeleton` | Enemy | Red |
-| Goblin | `goblin` | Enemy | Dark red (`#8B0000`) |
+| Skeleton | `skeleton` | Enemy | Bone white (`#F5F5DC`) |
+| Goblin | `goblin` | Enemy | Light green (`#90EE90`) |
 | Tree | `tree` | Prop | Green |
-| Rock | `rock` | Prop | Gray |
+| Rock | `rock` | Prop | Light gray (`#C0C0C0`) |
 | Chest | `chest` | Prop | Yellow |
-| Wall | `wall` | Prop | Brown (`#8B4513`) |
+| Wall | `wall` | Prop | Dark gray (`#404040`) |
 
 ---
 

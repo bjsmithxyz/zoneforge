@@ -18,11 +18,12 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 | `EntityInstance` | `id` (PK, auto_inc), `zone_id` | Placed entities: props, NPCs, enemies |
 
 **Planned tables** (added per phase):
-- `Ability`, `StatusEffect`, `CombatLog` — Phase 2 combat
-- `Portal`, `WorldEvent` — Phase 2 zone stitching
-- `Inventory`, `Equipment`, `Item` — Phase 2 inventory
-- `Quest`, `QuestProgress` — Phase 3 quest system
-- `Party`, `Guild` — Phase 4 multiplayer features
+
+- `Ability`, `StatusEffect`, `CombatLog` — Phase 3 combat (Group 7)
+- `Portal`, `WorldEvent` — Phase 4 zone stitching (Group 10)
+- `Inventory`, `Equipment`, `Item` — Phase 5 inventory (Group 13)
+- `Quest`, `QuestProgress` — Phase 5 quest system (Group 12)
+- `Party`, `Guild` — Phase 6 multiplayer features (Group 15–16)
 
 ## Core Reducers
 

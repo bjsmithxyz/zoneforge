@@ -43,19 +43,26 @@ spacetime generate --lang csharp --out-dir Assets/Scripts/autogen \
 
 **UI stack:** Unity UI Toolkit (UIElements) for panels and toolbars, uGUI for HUD elements. Do not use IMGUI / EditorGUI.
 
-**3D tile grid:** Tiles are placed as 3D `GameObject` prefabs on the X/Z plane (Y = up). The `Tilemap` component is not used. Tile painting uses raycasting + `Instantiate` / destroy.
+**Terrain system:** Ground terrain is procedurally generated from height and splat data — there are no individual tile GameObjects for terrain. Each zone is divided into chunks; each chunk has a `TerrainChunk` row on the server containing `height_data` and `splat_data` byte arrays. `TerrainRenderer` builds a Mesh from this data and the `TerrainSplatmap` shader blends texture layers.
 
-**Runtime tile painting pattern:**
+**Terrain painting pattern:**
 ```csharp
-// Raycast to the grid plane
-Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-Plane gridPlane = new Plane(Vector3.up, Vector3.zero);
-if (gridPlane.Raycast(ray, out float distance))
-{
-    Vector3 worldPos = ray.GetPoint(distance);
-    Vector3Int cell = WorldToCell(worldPos);  // snap to grid
-    PlaceTileAt(cell, selectedTilePrefab);
-}
+// TerrainPainter raycasts against the MeshCollider on the Terrain GameObject.
+// TilePalettePanel provides the active TerrainBrush (type, radius, strength).
+// On hit, the brush updates local TerrainChunkData, then calls:
+Reducers.PaintTerrain(zoneId, chunkX, chunkZ, heightData, splatData);
+// Server updates TerrainChunk; all subscribers (editor + client) rebuild their Meshes.
+```
+
+**Entity placement pattern:**
+
+```csharp
+// EntityPlacer raycasts against the MeshCollider on the Terrain GameObject.
+// EntityPalettePanel provides the selected EntityDefinition (prefab name, type, colour).
+// On click, EntityPlacer calls:
+Reducers.SpawnEntity(zoneId, prefabName, hit.point.x, hit.point.z, hit.point.y, entityType);
+// Server inserts an EntityInstance row; EntityRenderer spawns a placeholder cube on insert.
+// EntityPalettePanel.ClearSelection() is called when a terrain brush is activated (mutual exclusion).
 ```
 
 ## Regenerating Editor Bindings
