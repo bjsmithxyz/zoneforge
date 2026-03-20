@@ -12,7 +12,7 @@
 - [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
 - [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
 
-**Next:** Phase 2 Group 5 — Entity palette panel and click-to-place entity placement
+**Next:** Phase 2 Group 6 — Player movement
 
 ---
 
@@ -74,10 +74,10 @@
 - [x] Terrain system — client mirror (`TerrainRenderer`/`WaterRenderer`/`TerrainChunkData` in `zoneforge-client`)
 - [x] Assembly definition chain: `ZoneForgeAutogen.asmdef` → `ZoneForgeRuntime.asmdef` → `EditModeTests.asmdef`
 - [x] UI stylesheet fix: both panels styled and non-overlapping (Zone Manager top-left, Brush panel top-right)
-- [ ] Entity palette panel with sprite thumbnails
-- [ ] Click-to-place entity placement (calls `spawn_entity` reducer)
-- [ ] Subscribe to `EntityInstance` table (OnInsert callback)
-- [ ] Real-time entity spawning visible in both editor and game client
+- [x] Entity palette panel with sprite thumbnails
+- [x] Click-to-place entity placement (calls `spawn_entity` reducer)
+- [x] Subscribe to `EntityInstance` table (OnInsert callback)
+- [x] Real-time entity spawning visible in both editor and game client
 
 ### Group 6 — Player Movement
 
