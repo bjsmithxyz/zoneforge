@@ -88,17 +88,7 @@ Claude Code loads both the root CLAUDE.md and the submodule CLAUDE.md when worki
 
 ## Claude Skills
 
-Project-specific skills are loaded automatically by Claude Code when you describe a relevant task. See [docs/guides/Claude_Skills.md](docs/guides/Claude_Skills.md) for the full reference.
-
-| Skill | Scope | Triggers on |
-| ----- | ----- | ----------- |
-| `zoneforge-deploy` | Root | deploy, publish, rebuild server |
-| `zoneforge-new-feature` | Root | add feature, implement X, store X |
-| `zoneforge-debug` | Root | something not working, callbacks not firing, can't connect |
-| `spacetimedb-rust-table` | Server | add table, define schema, new entity |
-| `spacetimedb-rust-reducer` | Server | add reducer, server action, game mechanic |
-| `unity-spacetimedb-subscribe` | Client + Editor | subscribe, callbacks, react to server data |
-| `unity-autogen-refresh` | Client + Editor | regenerate bindings, spacetime generate |
+Project-specific skills are loaded automatically. See [docs/guides/Claude_Skills.md](docs/guides/Claude_Skills.md) for the full reference.
 
 ---
 
