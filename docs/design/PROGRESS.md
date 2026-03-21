@@ -78,6 +78,10 @@
 - [x] Click-to-place entity placement (calls `spawn_entity` reducer)
 - [x] Subscribe to `EntityInstance` table (OnInsert callback)
 - [x] Real-time entity spawning visible in both editor and game client
+- [x] Editor UI polish: collapsible Zone Manager (auto-collapse on zone select) and Brush Panel (manual toggle)
+- [x] Bug fix: zone list empty on startup (backfill from `Conn.Db.Zone.Iter()` in `OnConnected`)
+- [x] Bug fix: terrain painting and entity placement broken (`MeshCollider.sharedMesh` sync in `TerrainRenderer`; Y=0 plane fallback in `EntityPlacer`)
+- [x] Entity palette redesigned: foldout groups (NPC / Enemy / Prop), colour swatches, repositioned to avoid Brush Panel overlap
 
 ### Group 6 — Player Movement
 
