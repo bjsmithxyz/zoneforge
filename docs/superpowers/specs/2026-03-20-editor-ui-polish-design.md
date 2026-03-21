@@ -37,7 +37,7 @@ New zones created after startup continue to arrive via `OnZoneInserted` as befor
 1. `EntityPlacer._terrainCollider` is a `[SerializeField]` requiring manual Inspector wiring. If null, `Update` exits at the early-return null guard — the fallback code described below is never reached.
 2. `TerrainRenderer.BuildFullMesh()` never updates `MeshCollider.sharedMesh`. Even when the collider is properly wired, it raycasts against an empty/stale mesh and always misses.
 
-**Fix — `TerrainRenderer`:** Add `[RequireComponent(typeof(MeshCollider))]` to the class attribute list so Unity enforces the component's presence. Add `private MeshCollider _collider` field; assign in `Awake` via `GetComponent<MeshCollider>()`; call `if (_collider != null) _collider.sharedMesh = _mesh;` at the end of `BuildFullMesh()`. Without `[RequireComponent]`, a missing collider in the scene would fail silently.
+**Fix — `TerrainRenderer`:** Add `[RequireComponent(typeof(MeshCollider))]` to the class attribute list so Unity enforces the component's presence at component-add time. Add `private MeshCollider _collider` field; assign in `Awake` via `GetComponent<MeshCollider>()`; call `if (_collider != null) _collider.sharedMesh = _mesh;` at the end of `BuildFullMesh()`. **Scene setup note:** `[RequireComponent]` does not retroactively add the component to existing GameObjects. The `MeshCollider` must be manually added to the `TerrainRenderer` GameObject in the scene before entering Play mode.
 
 **Fix — `EntityPlacer`:** Restructure `Update()` so the `_terrainCollider` null check is part of a conditional branch, not a hard early return. The Y=0 plane fallback (same logic as `TerrainPainter.TryGetTerrainHit`) executes when the collider is null or the raycast misses:
 
@@ -62,7 +62,7 @@ else
 }
 ```
 
-The existing per-condition early-return guards (`HasActiveZone`, `SelectedEntry`, `UIHoverTracker`, `GetMouseButtonDown`, `Conn`) remain before this block.
+The existing per-condition early-return guards (`HasActiveZone`, `SelectedEntry`, `UIHoverTracker`, `GetMouseButtonDown`, `Conn`, `_camera`) remain before this block — including the `_camera == null` guard that must precede the `ScreenPointToRay` call.
 
 ---
 
@@ -315,7 +315,7 @@ Each `Foldout` starts expanded — set `foldout.value = true` explicitly when cr
 | `editor/Assets/UI/ZoneCreationPanel.uss` | Fix field heights (`height: auto; min-height: 24px`); fix cursor (`arrow`); add `.panel-header`, `.panel-title`, `.collapse-btn` styles |
 | `editor/Assets/UI/TilePalettePanel.uxml` | Wrap content in `panel-header` + `panel-body`; add `first-section` class to first label |
 | `editor/Assets/UI/TilePalettePanel.uss` | Add `.unity-toggle__label` colour rules; remove `:first-child` rule; add `.first-section` rule; add header/collapse-btn styles |
-| `editor/Assets/UI/EntityPalettePanel.uxml` | Increase `entity-scroll` max-height to 320px; grid populated in C# |
+| `editor/Assets/UI/EntityPalettePanel.uxml` | Increase `entity-scroll` `max-height` to 320px; grid content populated entirely in C# |
 | `editor/Assets/UI/EntityPalettePanel.uss` | Replace cell styles with row/swatch/group styles; update position (`right: 286px`) and width (180px) |
 
 **No server changes required.**
