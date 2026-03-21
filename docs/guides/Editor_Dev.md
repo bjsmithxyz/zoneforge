@@ -58,12 +58,15 @@ Reducers.PaintTerrain(zoneId, chunkX, chunkZ, heightData, splatData);
 
 ```csharp
 // EntityPlacer raycasts against the MeshCollider on the Terrain GameObject.
+// Falls back to the Y=0 plane if the collider is unavailable or the ray misses.
 // EntityPalettePanel provides the selected EntityDefinition (prefab name, type, colour).
 // On click, EntityPlacer calls:
-Reducers.SpawnEntity(zoneId, prefabName, hit.point.x, hit.point.z, hit.point.y, entityType);
+Reducers.SpawnEntity(zoneId, prefabName, hitPoint.x, hitPoint.z, hitPoint.y, entityType);
 // Server inserts an EntityInstance row; EntityRenderer spawns a placeholder cube on insert.
 // EntityPalettePanel.ClearSelection() is called when a terrain brush is activated (mutual exclusion).
 ```
+
+**Scene setup note:** `TerrainRenderer` requires a `MeshCollider` component on the same GameObject (`[RequireComponent(typeof(MeshCollider))]`). If the collider is missing at runtime, both terrain painting and entity placement will fall back to Y=0 plane mode (no error, but less precise). Add `MeshCollider` to the `TerrainRenderer` GameObject in the scene before entering Play mode.
 
 ## Regenerating Editor Bindings
 
@@ -100,7 +103,8 @@ The build excludes all `Assets/Scripts/Editor/` scripts automatically — those 
 | Problem | Fix |
 |---------|-----|
 | Bindings not updating after schema change | Run `spacetime generate` from `editor/`, then Reimport All |
-| Tile placement raycasting misses | Ensure the grid plane Y value matches your world grid origin |
+| Zone list empty on startup | SpacetimeDB `OnInsert` events fire before callbacks register; `ZoneCreationPanel.OnConnected` backfills from `Conn.Db.Zone.Iter()` — this is already handled |
+| Terrain painting or entity placement misses | Ensure `MeshCollider` is on the `TerrainRenderer` GameObject; `TerrainRenderer.BuildFullMesh()` syncs `sharedMesh` automatically |
 | UI not visible in build | Check UI Toolkit UXML asset is included in build; verify no EditorGUI calls |
 
 ## Claude Code Skills
@@ -110,7 +114,7 @@ When working in `editor/` with Claude Code:
 - **`unity-spacetimedb-subscribe`** — correct subscription ordering, callback registration, and `FrameTick` usage (same patterns as client)
 - **`unity-autogen-refresh`** — regenerating C# bindings after server schema changes
 
-Editor-specific skills for zone creation and tile placement patterns are planned for Phase 2.
+Editor-specific skills for zone creation and tile placement patterns are planned for a future phase.
 
 See [Claude_Skills.md](Claude_Skills.md) for the full skills reference.
 

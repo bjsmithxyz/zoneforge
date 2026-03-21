@@ -20,11 +20,15 @@ Assets/
 ├── Scripts/
 │   ├── Runtime/        ← MonoBehaviours and runtime managers
 │   │   ├── SpacetimeDBManager.cs      ← singleton; connects and subscribes to Zone, TerrainChunk, EntityInstance
-│   │   ├── ZoneCreationPanel.cs       ← UIToolkit panel: zone name/size form, existing zones list
-│   │   ├── TilePalettePanel.cs        ← UIToolkit panel: brush type selector, radius/strength sliders
+│   │   ├── ZoneCreationPanel.cs       ← UIToolkit panel: zone name/size form, existing zones list; collapsible
+│   │   ├── TilePalettePanel.cs        ← UIToolkit panel: brush type selector, radius/strength sliders; collapsible
+│   │   ├── EntityPalettePanel.cs      ← UIToolkit panel: entity types grouped by NPC/Enemy/Prop; click to select
 │   │   ├── TerrainPainter.cs          ← raycast-based terrain painting; calls paint_terrain reducer
-│   │   ├── TerrainRenderer.cs         ← subscribes to TerrainChunk; builds/updates Mesh per chunk
+│   │   ├── TerrainRenderer.cs         ← subscribes to TerrainChunk; builds/updates Mesh + MeshCollider per chunk
 │   │   ├── WaterRenderer.cs           ← flat quad mesh at zone.water_level
+│   │   ├── EntityPlacer.cs            ← click-to-place entities; raycasts terrain collider (Y=0 fallback)
+│   │   ├── EntityRenderer.cs          ← subscribes to EntityInstance; spawns/removes placeholder cubes
+│   │   ├── EntityDefinition.cs        ← data class: DisplayName, PrefabName, EntityType, Color
 │   │   ├── TerrainBrush.cs            ← abstract brush base (radius, strength, falloff)
 │   │   ├── HeightBrush.cs             ← raise/lower/smooth terrain height
 │   │   ├── TextureBrush.cs            ← paint splatmap layer
@@ -42,7 +46,9 @@ Assets/
 │   ├── ZoneCreationPanel.uxml         ← zone form (name, width, height, water level, existing zones list)
 │   ├── ZoneCreationPanel.uss          ← styles; panel anchored top-left (320px)
 │   ├── TilePalettePanel.uxml          ← brush type (Texture/Height/Combined), Mode, Layer, Radius, Strength
-│   └── TilePalettePanel.uss           ← styles; panel anchored top-right (260px)
+│   ├── TilePalettePanel.uss           ← styles; panel anchored top-right (260px)
+│   ├── EntityPalettePanel.uxml        ← entity palette container (grid populated in C#)
+│   └── EntityPalettePanel.uss         ← styles; panel anchored bottom-right (180px), left of Brush Panel
 ├── Materials/
 │   ├── TerrainSplatmap.mat            ← terrain material (references TerrainSplatmap.shader)
 │   └── WaterUnlit.mat                 ← water material (references WaterUnlit.shader)
@@ -50,7 +56,7 @@ Assets/
 │   ├── TerrainSplatmap.shader         ← splatmap blending shader
 │   └── WaterUnlit.shader              ← flat water colour shader
 └── Art/
-    ├── Sprites/        ← Entity thumbnail sprites for entity palette UI (Phase 2)
+    ├── Sprites/        ← Entity thumbnail sprites for entity palette UI
     └── Prefabs/        ← Reusable prefabs
 
 ```
@@ -76,16 +82,18 @@ All UI is built with **Unity UI Toolkit (UIElements)** — never uGUI, IMGUI, or
 
 **Implemented panels:**
 
-| Panel        | File                              | Position  | Purpose                                   |
-|--------------|-----------------------------------|-----------|-------------------------------------------|
-| Zone Manager | `ZoneCreationPanel.cs/.uxml/.uss` | Top-left  | Create zones, list/select existing zones  |
-| Brush Panel  | `TilePalettePanel.cs/.uxml/.uss`  | Top-right | Brush type, mode, layer, radius, strength |
+| Panel          | File                                | Position     | Purpose                                                     |
+|----------------|-------------------------------------|--------------|-------------------------------------------------------------|
+| Zone Manager   | `ZoneCreationPanel.cs/.uxml/.uss`   | Top-left     | Create zones, list/select existing zones; collapsible       |
+| Brush Panel    | `TilePalettePanel.cs/.uxml/.uss`    | Top-right    | Brush type, mode, layer, radius, strength; collapsible      |
+| Entity Palette | `EntityPalettePanel.cs/.uxml/.uss`  | Bottom-right | Entity types grouped by NPC/Enemy/Prop; click to select     |
 
-**Planned panels (Phase 2 continuation):**
+**Zone Manager** auto-collapses when a zone is activated; chevron button expands/collapses manually. **Brush Panel** and **Entity Palette** are manual-toggle only. Selecting a terrain brush clears the entity selection (mutual exclusion) and vice versa.
+
+**Planned panels (future):**
 
 | Panel            | Purpose                                     |
 |------------------|---------------------------------------------|
-| Entity palette   | Grid of entity types with thumbnail sprites |
 | Properties panel | Selected entity properties                  |
 
 Stylesheets are applied programmatically (`root.styleSheets.Add(_styleSheet)`) via a `[SerializeField] StyleSheet _styleSheet` field assigned in the scene, not via UXML `<Style>` tags (Unity doesn't resolve those for runtime-created files).
