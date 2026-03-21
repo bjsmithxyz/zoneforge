@@ -20,7 +20,10 @@ Assets/
 │   │   ├── ZoneVisualData.cs
 │   │   └── TerrainChunkData.cs              ← in-memory height/splat grid (shared with editor)
 │   ├── Network/        ← SpacetimeDB integration
-│   │   └── SpacetimeDBManager.cs            ← singleton; subscribes to Zone, TerrainChunk, EntityInstance
+│   │   └── SpacetimeDBManager.cs            ← singleton; connects, stores LocalIdentity, fires player/zone/entity events
+│   ├── Player/         ← Player lifecycle and movement
+│   │   ├── PlayerManager.cs                 ← scene singleton; spawns/destroys capsules per Player row
+│   │   └── PlayerController.cs              ← per-capsule; WASD prediction, server reconciliation, remote lerp
 │   ├── Zone/           ← Runtime zone logic (3D, no Tilemap)
 │   │   ├── ZoneController.cs
 │   │   ├── TerrainRenderer.cs               ← subscribes to TerrainChunk, builds Mesh from height data
@@ -43,10 +46,25 @@ The client communicates with the server exclusively through the **SpacetimeDB C#
 
 **Connection lifecycle** (managed by `SpacetimeDBManager`):
 
-1. `DbConnection.Builder()` — connect to `http://localhost:3000` (dev) or cloud URL (prod)
-2. `OnConnect` — subscribe to `Zone`, `TerrainChunk`, and `EntityInstance` tables
-3. `OnSubscriptionApplied` — register table callbacks: `TerrainChunk.OnInsert/OnUpdate` triggers `TerrainRenderer.Rebuild()`; `EntityInstance.OnInsert/OnUpdate/OnDelete` drives entity spawning
+1. `DbConnection.Builder()` — connect to `http://localhost:3000` (dev) or cloud URL (prod). Auth token is persisted in `PlayerPrefs` so the same `Identity` is reused across sessions.
+2. `OnConnect` — store `LocalIdentity`, subscribe to `Player`, `Zone`, `TerrainChunk`, and `EntityInstance` tables
+3. `OnSubscriptionApplied` — register table callbacks; fire `OnConnected` event
 4. `FrameTick()` — called every `Update()` to process incoming messages
+
+**Player system** (`PlayerManager` + `PlayerController`):
+
+- `PlayerManager` is a scene singleton. On `OnConnected` it backfills existing `Player` rows via `Conn.Db.Player.Iter()` and calls `create_player` if no local row exists.
+- Each `Player` row gets a capsule `GameObject` with a `PlayerController` component.
+- **Local player** (`isLocal = true`): reads WASD input, applies movement immediately (client-side prediction), sends `MovePlayer` reducer at 10 Hz, reconciles with server position via `Vector3.MoveTowards` when drift exceeds 1 m. Reconciliation is suppressed while input is held to prevent direction-change jitter.
+- **Remote players** (`isLocal = false`): lerp to latest server position at `Time.deltaTime × 10`.
+- Camera (`Camera.main`) is parented to the local player capsule at offset `(0, 10, −7)` with rotation `(55°, 0°, 0°)`.
+
+**Required scene GameObjects:**
+
+| GameObject | Component | Notes |
+| --- | --- | --- |
+| `SpacetimeDBManager` | `SpacetimeDBManager` | Connects to SpacetimeDB, fires all events |
+| `PlayerManager` | `PlayerManager` | Spawns/destroys player capsules |
 
 **Generated bindings** — `spacetime generate --lang csharp` produces typed C# classes for every table and reducer in the server module. Output goes to `Assets/Scripts/autogen/`. Regenerate after any server schema change.
 
