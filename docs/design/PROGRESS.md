@@ -12,7 +12,7 @@
 - [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
 - [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
 
-**Next:** Phase 3 Group 7 — Combat Foundation
+**Next:** Phase 3 Group 8 — Combat UI & Abilities
 
 ---
 
@@ -100,13 +100,13 @@
 
 ### Group 7 — Combat Foundation
 
-- [ ] `Ability` table (id, damage, cooldown, mana_cost, range)
-- [ ] `StatusEffect` table (burn, freeze, stun, poison)
-- [ ] `CombatLog` table (timestamp, attacker, target, damage)
-- [ ] `use_ability` reducer (server-authoritative: validate range, cooldown, mana)
-- [ ] `apply_damage` reducer
-- [ ] Death and respawn logic
-- [ ] Combat VFX — projectiles (fireball, arrow prefabs)
+- [x] `Ability` table (id, damage, cooldown, mana_cost, range)
+- [x] `StatusEffect` table (burn, freeze, stun, poison)
+- [x] `CombatLog` table (timestamp, attacker, target, damage)
+- [x] `use_ability` reducer (server-authoritative: validate range, cooldown, mana)
+- [x] `apply_damage` reducer
+- [x] Death and respawn logic
+- [x] Combat VFX — projectiles (fireball, arrow prefabs)
 
 ### Group 8 — Combat UI & Abilities
 
