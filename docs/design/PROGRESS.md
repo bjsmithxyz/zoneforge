@@ -12,7 +12,7 @@
 - [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
 - [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
 
-**Next:** Phase 2 Group 6 — multi-client test (item 6): verify movement direction sync between 2 Unity clients in same zone
+**Next:** Phase 3 Group 7 — Combat Foundation
 
 ---
 
@@ -90,7 +90,7 @@
 - [x] Subscribe to `Player` table (OnUpdate callback)
 - [x] Client-side prediction + server reconciliation
 - [x] NavMesh setup and collision detection (zone boundaries, walls)
-- [ ] Multi-client test: 2+ Unity clients in same zone
+- [x] Multi-client test: 2+ Unity clients in same zone
 
 **Milestone: Players move in real time across multiple clients**
 
