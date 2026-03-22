@@ -12,14 +12,18 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 
 | Table | Key Fields | Purpose |
 |-------|-----------|---------|
-| `Player` | `id` (PK, auto_inc), `identity` (unique) | Player state: position, health, zone |
+| `Player` | `id` (PK, auto_inc), `identity` (unique) | Player state: position, health, mana, is_dead, zone |
 | `Zone` | `id` (PK, auto_inc), `name` | Zone metadata: dimensions, `water_level` |
 | `TerrainChunk` | `id` (PK, auto_inc), `zone_id`, `chunk_x`, `chunk_z` | Per-chunk heightmap (`height_data` byte[]) and splatmap (`splat_data` byte[]) |
 | `EntityInstance` | `id` (PK, auto_inc), `zone_id` | Placed entities: props, NPCs, enemies |
+| `Ability` | `id` (PK, auto_inc) | Ability definitions: damage, cooldown_ms, mana_cost, range, ability_type |
+| `PlayerCooldown` | `id` (PK, auto_inc), `player_id` (btree) | Per-player per-ability cooldown expiry timestamps |
+| `StatusEffect` | `id` (PK, auto_inc), `target_id` (btree) | Active DoT/debuff effects: type, expires_at, damage_per_tick |
+| `CombatLog` | `id` (PK, auto_inc) | Immutable record of every damage/heal event |
+| `StatusEffectTick` | `scheduled_id` (PK, auto_inc) | Scheduler row — triggers `tick_status_effects` every 1 s |
 
 **Planned tables** (added per phase):
 
-- `Ability`, `StatusEffect`, `CombatLog` — Phase 3 combat (Group 7)
 - `Portal`, `WorldEvent` — Phase 4 zone stitching (Group 10)
 - `Inventory`, `Equipment`, `Item` — Phase 5 inventory (Group 13)
 - `Quest`, `QuestProgress` — Phase 5 quest system (Group 12)
@@ -29,11 +33,16 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 
 | Reducer | Caller | Purpose |
 |---------|--------|---------|
-| `create_player(name)` | Client on connect | Register new player |
+| `create_player(name)` | Client on connect | Register new player (zone_id defaults to 1) |
 | `move_player(x, y)` | Client on input | Server-validated movement |
 | `create_zone(name, w, h, water_level)` | Editor on zone creation | Create zone + initialise flat `TerrainChunk` rows for every chunk in the grid |
 | `paint_terrain(zone_id, chunk_x, chunk_z, height_data, splat_data)` | Editor on brush stroke | Update a chunk's heightmap and/or splatmap |
 | `spawn_entity(zone_id, prefab, x, y, type)` | Editor on entity placement | Place entity in zone |
+| `use_ability(ability_id, target_id)` | Client on key press | Server-authoritative: validates range, cooldown, mana; calls `apply_damage` |
+| `respawn()` | Client on R key | Resets dead player to zone centre with full health/mana; clears status effects |
+| `tick_status_effects(_)` | Scheduler (1 Hz) | Applies DoT ticks, removes expired effects, re-schedules self |
+
+`apply_damage` is a plain Rust helper function (not a reducer) called internally by `use_ability` and `tick_status_effects`.
 
 ## Module Conventions
 

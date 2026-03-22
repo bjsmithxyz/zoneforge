@@ -26,12 +26,16 @@ ZoneForge consists of three applications sharing a single SpacetimeDB backend:
              │  │  Tables (authoritative     │  │
              │  │  game state)               │  │
              │  │  Player, Zone,             │  │
-             │  │  TerrainChunk, Entity...   │  │
+             │  │  TerrainChunk, Entity,     │  │
+             │  │  Ability, CombatLog,       │  │
+             │  │  PlayerCooldown,           │  │
+             │  │  StatusEffect...           │  │
              │  └────────────────────────────┘  │
              │  ┌────────────────────────────┐  │
              │  │  Reducers (mutations)      │  │
              │  │  create_zone, paint_terrain│  │
              │  │  move_player, spawn_entity │  │
+             │  │  use_ability, respawn      │  │
              │  └────────────────────────────┘  │
              └──────────────────────────────────┘
 ```
