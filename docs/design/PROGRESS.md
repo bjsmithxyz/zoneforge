@@ -12,7 +12,7 @@
 - [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
 - [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
 
-**Next:** Phase 3 Group 8 — Combat UI & Abilities
+**Next:** Phase 3 Group 9 — Enemy AI (Basic)
 
 ---
 
@@ -110,14 +110,14 @@
 
 ### Group 8 — Combat UI & Abilities
 
-- [ ] Ability hotbar UI (slots 1–5)
-- [ ] Cooldown indicators
-- [ ] Health bar UI (player and enemy)
-- [ ] Floating damage numbers
-- [ ] Melee attack ability
-- [ ] Fireball spell (ranged, burn DoT)
-- [ ] Heal spell (self or ally)
-- [ ] Object pooling for projectiles and VFX
+- [x] Ability hotbar UI (slots 1–5)
+- [x] Cooldown indicators
+- [x] Health bar UI (player and enemy)
+- [x] Floating damage numbers
+- [x] Melee attack ability
+- [x] Fireball spell (ranged, burn DoT)
+- [x] Heal spell (self or ally)
+- [x] Object pooling for projectiles and VFX
 
 ### Group 9 — Enemy AI (Basic)
 
