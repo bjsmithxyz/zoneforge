@@ -33,7 +33,11 @@ Spawning is decoupled from the AI tick. `SpawnPoint` rows drive automatic enemy 
 
 ### Admin Gating
 
-`spawn_enemy_manual`, `create_spawn_point`, `delete_spawn_point`, `create_enemy_def`, and `delete_enemy_def` all require the caller's identity to be present in the `Admin` table. `claim_admin` is callable by anyone but only succeeds when the `Admin` table is empty (first-come bootstrap).
+`spawn_enemy_manual`, `create_spawn_point`, `delete_spawn_point`, `create_enemy_def`, and `delete_enemy_def` all require the caller's identity to be present in the `Admin` table.
+
+Admin identities are **compile-time constants** in the Rust source — a `const ADMIN_IDENTITIES: &[&str]` slice of hex identity strings seeded into the `Admin` table in `init`. There is no runtime claim or invite mechanism. Adding or removing an admin requires editing the constant and republishing. This is intentional: admin access is a code-level trust decision, not a runtime one.
+
+To find your identity hex: `spacetime identity list` — copy the hex of the identity marked with `*`.
 
 ---
 
@@ -132,10 +136,9 @@ Breaking change — requires `--delete-data` on next publish.
 
 ## Server Reducers
 
-### Admin management
-- `claim_admin` — succeeds only when `Admin` table is empty
-- `add_admin(identity)` — admin-only
-- `remove_admin(identity)` — admin-only
+### Admin seeding (init only — no runtime reducers)
+
+Admin identities are seeded from `ADMIN_IDENTITIES` in `init`. There are no `claim_admin`, `add_admin`, or `remove_admin` reducers. Admin changes require editing the constant and republishing.
 
 ### EnemyDefinition management (admin-only)
 - `create_enemy_def(name, enemy_type, prefab_name, max_health, damage, aggro_range, attack_range, attack_speed_ms, move_speed)`
@@ -249,4 +252,5 @@ Mirrors `PlayerManager`:
 
 - **Group 12 (Triggers):** SpawnPoint rows are already in the database; the editor visualises and places them. Trigger actions can reference SpawnPoint ids to enable/disable spawning.
 - **Group 13 (Loot):** Add `loot_table_id: Option<u64>` to `EnemyDefinition`; `apply_damage_to_enemy` emits a loot event on kill.
+- **Admin auth (Group 11):** When deploying to SpacetimeDB Cloud, admin identities can be linked to OIDC accounts (GitHub, Google) via SpacetimeDB Cloud authentication. The compile-time `ADMIN_IDENTITIES` list remains as a fallback but cloud-linked identities become the primary path. No schema change required — the `Admin` table is already identity-keyed.
 - **NavMesh pathfinding:** If full obstacle avoidance becomes needed, the correct path is to pre-compute nav mesh data on the server (stored in a table, baked offline) and use it in `tick_ai` for waypoint selection — not to delegate movement decisions to the client, which would undermine server authority.
