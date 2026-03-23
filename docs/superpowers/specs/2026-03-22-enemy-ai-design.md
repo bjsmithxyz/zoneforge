@@ -104,7 +104,18 @@ Loot table reference deferred to Group 13.
 | `EnemyDespawnTimer` | `despawn_dead_enemy`     | Per-enemy, fires 3s after death |
 | `RespawnTimer`      | `respawn_at_spawn_point` | Per-spawn-point, fires after respawn_delay_s |
 
-All three follow the standard SpacetimeDB scheduled table pattern (`scheduled_id: u64, scheduled_at: ScheduleAt`, plus payload fields).
+Full struct definitions including payload fields:
+
+```rust
+// AiTick — no payload, global tick
+struct AiTick { scheduled_id: u64, scheduled_at: ScheduleAt }
+
+// EnemyDespawnTimer — payload: which enemy to despawn
+struct EnemyDespawnTimer { scheduled_id: u64, scheduled_at: ScheduleAt, enemy_id: u64 }
+
+// RespawnTimer — payload: which spawn point to refill
+struct RespawnTimer { scheduled_id: u64, scheduled_at: ScheduleAt, spawn_point_id: u64 }
+```
 
 ### `CombatLog` schema change
 
@@ -139,7 +150,8 @@ Breaking change — requires `--delete-data` on next publish.
 - `despawn_enemy(enemy_id)` — immediate deletion regardless of health
 
 ### Player→Enemy combat
-- `attack_enemy(ability_id, enemy_id)` — mirrors `use_ability` validation (caller alive, ability exists, zone match, range check, cooldown, mana) but targets `Enemy` table. Reuses `PlayerCooldown` table. Calls `apply_damage_to_enemy` (internal). On kill: schedules `EnemyDespawnTimer` for 3s. Writes `CombatLog` with `attacker_is_enemy: false, target_is_enemy: true`.
+
+- `attack_enemy(ability_id, enemy_id)` — mirrors `use_ability` validation (caller alive, ability exists, zone match, range check, cooldown, mana) but targets `Enemy` table. Reuses `PlayerCooldown` table. Calls `apply_damage_to_enemy` (internal), which writes the CombatLog row.
 - `use_ability` — unchanged; remains the player→player path
 
 ### `tick_ai` (500ms scheduled)
@@ -155,12 +167,16 @@ Player in attack_range    → Attack: hold position; if cooldown elapsed, deal d
 Movement step: `move_speed × 0.5s` per tick (simple vector step, no NavMesh — enemies walk through obstacles in Group 9).
 
 Attack branch by `enemy_type`:
+
 - `Melee` / `Ranged`: call `apply_damage_from_enemy` (internal fn; updates Player health, writes CombatLog with `attacker_is_enemy: true, target_is_enemy: false`)
-- `Caster`: insert `StatusEffect(Burn, 5s, 8 dmg/tick)` — existing `tick_status_effects` handles DoT
+- `Caster`: insert `StatusEffect(Burn, 5s, 8 dmg/tick)` targeting the player id — existing `tick_status_effects` handles the DoT tick. **Note:** `StatusEffect.target_id` always references a `Player` row in Group 9. The existing `tick_status_effects` reducer calls `apply_damage`, which looks up the `Player` table only. Caster enemies never apply status effects to other enemies — that is out of scope for Group 9.
+
+`tick_ai` collects all living players into a Vec via a full `Player` table scan, then filters by `zone_id` in Rust. The `Player` table has no btree index on `zone_id`. This is acceptable at Group 9 scale (expected single-digit concurrent players per server). If scale increases, add `#[index(btree)]` on `Player.zone_id` as a non-breaking change.
 
 ### `despawn_dead_enemy` (scheduled, fires 3s after death)
+
 - If enemy row exists and `is_dead = true`: delete it
-- If `spawn_point_id` is set: insert `RespawnTimer` scheduled for `respawn_delay_s` seconds later
+- If `spawn_point_id` is set: look up the `SpawnPoint` row to read `respawn_delay_s`, then insert a `RespawnTimer` row scheduled for that many seconds later. If the SpawnPoint no longer exists (deleted between death and despawn), skip the respawn silently.
 
 ### `respawn_at_spawn_point` (scheduled, fires after respawn delay)
 - If SpawnPoint deleted: exit silently (self-cancelling)
@@ -200,7 +216,7 @@ Bootstrap `AiTick` scheduled row if not already present (same pattern as mana re
 Mirrors `PlayerManager`:
 - `Awake`: subscribe to enemy events + `OnConnected`
 - `OnConnected`: backfill existing Enemy rows
-- `OnEnemyInserted`: look up EnemyDefinition → instantiate capsule (Melee: orange, Ranged: yellow, Caster: purple) → attach `EnemyController` + health bar → call `CombatManager.RegisterEnemyPosition`
+- `OnEnemyInserted`: look up EnemyDefinition → instantiate capsule (Melee: orange, Ranged: yellow, Caster: purple) → attach `EnemyController` + health bar → call `CombatManager.Instance?.RegisterEnemyPosition` (null-guarded; `CombatManager` must be present in the scene before connection fires)
 - `OnEnemyUpdated`: forward to `EnemyController`; if `is_dead` just became true, trigger death visual
 - `OnEnemyDeleted`: destroy GameObject
 - `GetEnemyObject(ulong enemyId)` public accessor
@@ -233,4 +249,4 @@ Mirrors `PlayerManager`:
 
 - **Group 12 (Triggers):** SpawnPoint rows are already in the database; the editor visualises and places them. Trigger actions can reference SpawnPoint ids to enable/disable spawning.
 - **Group 13 (Loot):** Add `loot_table_id: Option<u64>` to `EnemyDefinition`; `apply_damage_to_enemy` emits a loot event on kill.
-- **NavMesh pathfinding:** Replace `step_toward` in `tick_ai` with a client-side nav request if full obstacle avoidance becomes needed (requires rethinking server authority — deferred).
+- **NavMesh pathfinding:** If full obstacle avoidance becomes needed, the correct path is to pre-compute nav mesh data on the server (stored in a table, baked offline) and use it in `tick_ai` for waypoint selection — not to delegate movement decisions to the client, which would undermine server authority.
