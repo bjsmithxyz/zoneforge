@@ -74,7 +74,7 @@ fn identity_from_hex(hex: &str) -> Identity {
         bytes[i] = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)
             .expect("ADMIN_IDENTITIES contains non-hex characters");
     }
-    Identity::from_byte_array(bytes)
+    Identity::from_be_byte_array(bytes)
 }
 
 fn is_admin(ctx: &ReducerContext) -> bool {
