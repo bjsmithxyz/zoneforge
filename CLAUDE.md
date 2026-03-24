@@ -68,6 +68,19 @@ spacetime generate --lang csharp --out-dir Assets/Scripts/autogen \
   --bin-path ../server/spacetimedb/target/wasm32-unknown-unknown/release/zoneforge_server.wasm
 ```
 
+## Git Worktrees
+
+Worktree location: `~/.config/superpowers/worktrees/zoneforge/<branch-name>`
+
+After creating a new umbrella worktree, initialize submodules inside it:
+
+```bash
+cd ~/.config/superpowers/worktrees/zoneforge/<branch-name>
+git submodule update --init --recursive --force
+```
+
+`--force` is required because `.git/modules/` entries already exist in the main worktree.
+
 ## Important Gotchas
 
 - `wasm-opt` warning during `spacetime build` is non-critical — ignore during development
