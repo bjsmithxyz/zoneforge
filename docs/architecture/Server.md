@@ -1,5 +1,15 @@
 # ZoneForge — SpacetimeDB Server Architecture
 
+## Document History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| 1.2 | 2026-03-24 | Added `ManaRegenTick` table; added `tick_mana_regen`, `client_connected` reducers; renamed `paint_terrain` → `update_terrain_chunk`; corrected `spawn_entity` signature |
+| 1.1 | 2026-03-07 | Added combat tables (Ability, PlayerCooldown, StatusEffect, CombatLog, StatusEffectTick) and reducers |
+| 1.0 | 2026-02-01 | Initial document |
+
+---
+
 ## Overview
 
 The server is a single Rust WASM module published to SpacetimeDB. It contains all authoritative game logic: table definitions (schema) and reducers (mutations).
@@ -21,6 +31,7 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 | `StatusEffect` | `id` (PK, auto_inc), `target_id` (btree) | Active DoT/debuff effects: type, expires_at, damage_per_tick |
 | `CombatLog` | `id` (PK, auto_inc) | Immutable record of every damage/heal event |
 | `StatusEffectTick` | `scheduled_id` (PK, auto_inc) | Scheduler row — triggers `tick_status_effects` every 1 s |
+| `ManaRegenTick` | `scheduled_id` (PK, auto_inc) | Scheduler row — triggers `tick_mana_regen` every 2 s |
 
 **Planned tables** (added per phase):
 
@@ -33,14 +44,16 @@ The server is a single Rust WASM module published to SpacetimeDB. It contains al
 
 | Reducer | Caller | Purpose |
 |---------|--------|---------|
-| `create_player(name)` | Client on connect | Register new player (zone_id defaults to 1) |
-| `move_player(x, y)` | Client on input | Server-validated movement |
+| `create_player(name)` | Client on connect | Register new player (zone_id defaults to 1); idempotent — skips if identity already has a row |
+| `move_player(x, y)` | Client on input | Server-validated movement; clamps to zone bounds; returns `Result` |
 | `create_zone(name, w, h, water_level)` | Editor on zone creation | Create zone + initialise flat `TerrainChunk` rows for every chunk in the grid |
-| `paint_terrain(zone_id, chunk_x, chunk_z, height_data, splat_data)` | Editor on brush stroke | Update a chunk's heightmap and/or splatmap |
-| `spawn_entity(zone_id, prefab, x, y, type)` | Editor on entity placement | Place entity in zone |
+| `update_terrain_chunk(zone_id, chunk_x, chunk_z, height_data, splat_data)` | Editor on brush stroke | Update a chunk's heightmap and/or splatmap; validates size (4096 bytes each) and bounds |
+| `spawn_entity(zone_id, prefab, x, y, elevation, entity_type)` | Editor on entity placement | Place entity in zone; `elevation` is world-space Y; `entity_type` is a plain string |
 | `use_ability(ability_id, target_id)` | Client on key press | Server-authoritative: validates range, cooldown, mana; calls `apply_damage` |
 | `respawn()` | Client on R key | Resets dead player to zone centre with full health/mana; clears status effects |
 | `tick_status_effects(_)` | Scheduler (1 Hz) | Applies DoT ticks, removes expired effects, re-schedules self |
+| `tick_mana_regen(_)` | Scheduler (2 Hz) | Restores 10 mana to all living players; re-schedules self |
+| `client_connected` | SpacetimeDB lifecycle | Bootstraps mana regen tick if missing (handles hot-publish without data wipe) |
 
 `apply_damage` is a plain Rust helper function (not a reducer) called internally by `use_ability` and `tick_status_effects`.
 

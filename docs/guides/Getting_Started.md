@@ -1,5 +1,15 @@
 # ZoneForge Development Setup Guide - Kubuntu
 
+## Document History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| 1.2 | 2026-03-24 | Updated basic module code sample to match current server schema (terrain_width/height/water_level on Zone; mana/is_dead on Player; water_level param on create_zone); updated SQL verification output |
+| 1.1 | 2026-03-07 | Added ConnectionTest.cs section and full verification steps |
+| 1.0 | 2026-02-01 | Initial guide |
+
+---
+
 ## Environment Information
 
 - **OS**: Kubuntu (Ubuntu-based)
@@ -514,6 +524,9 @@ pub struct Player {
     pub position_y: f32,
     pub health: i32,
     pub max_health: i32,
+    pub mana: i32,
+    pub max_mana: i32,
+    pub is_dead: bool,
 }
 
 // Define a Zone table
@@ -523,8 +536,9 @@ pub struct Zone {
     #[auto_inc]
     pub id: u64,
     pub name: String,
-    pub grid_width: u32,
-    pub grid_height: u32,
+    pub terrain_width: u32,
+    pub terrain_height: u32,
+    pub water_level: f32,
 }
 
 // Reducer to create a new player
@@ -539,6 +553,9 @@ pub fn create_player(ctx: &ReducerContext, name: String) {
         position_y: 0.0,
         health: 100,
         max_health: 100,
+        mana: 100,
+        max_mana: 100,
+        is_dead: false,
     };
 
     ctx.db.player().insert(player);
@@ -547,28 +564,29 @@ pub fn create_player(ctx: &ReducerContext, name: String) {
 
 // Reducer to move a player
 #[reducer]
-pub fn move_player(ctx: &ReducerContext, new_x: f32, new_y: f32) {
-    let player_identity = ctx.sender();
+pub fn move_player(ctx: &ReducerContext, new_x: f32, new_y: f32) -> Result<(), String> {
+    // ctx.sender() is a method in SpacetimeDB 2.x
+    let player = ctx.db.player().identity().find(ctx.sender())
+        .ok_or_else(|| "Player not found".to_string())?;
 
-    // .identity() works here because the field is marked #[unique] above.
-    if let Some(player) = ctx.db.player().identity().find(player_identity) {
-        ctx.db.player().id().update(Player {
-            position_x: new_x,
-            position_y: new_y,
-            ..player
-        });
-        log::info!("Player moved to ({}, {})", new_x, new_y);
-    }
+    ctx.db.player().id().update(Player {
+        position_x: new_x,
+        position_y: new_y,
+        ..player
+    });
+    log::info!("Player moved to ({}, {})", new_x, new_y);
+    Ok(())
 }
 
-// Reducer to create a zone
+// Reducer to create a zone (water_level sets the default water surface height)
 #[reducer]
-pub fn create_zone(ctx: &ReducerContext, name: String, width: u32, height: u32) {
+pub fn create_zone(ctx: &ReducerContext, name: String, width: u32, height: u32, water_level: f32) {
     let zone = Zone {
         id: 0, // auto_inc
         name: name.clone(),
-        grid_width: width,
-        grid_height: height,
+        terrain_width: width,
+        terrain_height: height,
+        water_level,
     };
 
     ctx.db.zone().insert(zone);
@@ -647,8 +665,8 @@ spacetime server list
 # Should show:
 # zoneforge-server - http://localhost:3000
 
-# Call a reducer using CLI
-spacetime call --server local zoneforge-server create_zone "Test Village" 64 64
+# Call a reducer using CLI (water_level is the 4th argument)
+spacetime call --server local zoneforge-server create_zone "Test Village" 64 64 0.5
 
 # Expected output:
 # WARNING: This command is UNSTABLE and subject to breaking changes.
@@ -660,9 +678,9 @@ spacetime sql --server local zoneforge-server "SELECT * FROM zone"
 # Expected output:
 # WARNING: This command is UNSTABLE and subject to breaking changes.
 #
-#  id | name           | grid_width | grid_height
-# ----+----------------+------------+-------------
-#  1  | "Test Village" | 64         | 64
+#  id | name           | terrain_width | terrain_height | water_level
+# ----+----------------+---------------+----------------+-------------
+#  1  | "Test Village" | 64            | 64             | 0.5
 ```
 
 ### Test 3: Unity Project
@@ -944,11 +962,11 @@ Now that your environment is set up, you're ready to start Sprint 1:
     Expected output:
 
     ```text
-    +----+------------------+------------+---------+------------+------------+--------+------------+
-    | id | identity         | name       | zone_id | position_x | position_y | health | max_health |
-    +----+------------------+------------+---------+------------+------------+--------+------------+
-    | 1  | <identity hash>  | TestPlayer | 1       | 0          | 0          | 100    | 100        |
-    +----+------------------+------------+---------+------------+------------+--------+------------+
+    +----+------------------+------------+---------+------------+------------+--------+------------+------+----------+---------+
+    | id | identity         | name       | zone_id | position_x | position_y | health | max_health | mana | max_mana | is_dead |
+    +----+------------------+------------+---------+------------+------------+--------+------------+------+----------+---------+
+    | 1  | <identity hash>  | TestPlayer | 1       | 32         | 32         | 100    | 100        | 100  | 100      | false   |
+    +----+------------------+------------+---------+------------+------------+--------+------------+------+----------+---------+
     ```
 
     If you see the row, client-server connectivity is confirmed. Press **Stop** (■) in Unity to exit Play mode.

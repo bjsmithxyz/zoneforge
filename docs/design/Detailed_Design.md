@@ -6,12 +6,22 @@
 
 ---
 
-**Project Name:** ZoneForge  
-**Client Engine:** Unity 2022.3 LTS  
-**Backend:** SpacetimeDB with Rust  
-**Document Version:** 2.0 - SpacetimeDB Integration  
-**Date:** March 7, 2026  
+**Project Name:** ZoneForge
+**Client Engine:** Unity 2022.3 LTS
+**Backend:** SpacetimeDB 2.x with Rust
+**Document Version:** 2.1
+**Date:** March 24, 2026
 **Target Platform:** Windows, macOS, Linux, WebGL (Client) | Cloud/Self-Hosted (Server)
+
+---
+
+## Document History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| 2.1 | 2026-03-24 | Updated all SpacetimeDB examples to 2.x API; corrected table schemas (Zone, Player, EntityInstance); replaced 2D tile-layer system with terrain chunk system; removed unused Unity packages; noted missing AI server tables |
+| 2.0 | 2026-03-07 | SpacetimeDB integration — replaced local file persistence with server tables and reducers |
+| 1.0 | 2026-01-15 | Initial design document |
 
 ---
 
@@ -187,20 +197,18 @@ SpacetimeDB is a real-time backend framework and database for apps and games tha
 
 #### Unity Packages
 
-- **Universal Render Pipeline (URP)** - Core rendering
-- **2D Tilemap Editor** - Grid-based map creation
-- **ProBuilder** - In-editor 3D modeling
-- **Cinemachine** - Camera control
-- **Timeline** - Cutscenes
-- **Post Processing** - Visual effects
-- **SpacetimeDB Unity SDK** - Real-time backend integration
+- **Universal Render Pipeline (URP)** — Core 3D rendering pipeline
+- **UI Toolkit** — Runtime world-building UI panels (editor app)
+- **Cinemachine** — Camera control
+- **Timeline** — Cutscenes
+- **TextMeshPro** — High-quality UI text
+- **SpacetimeDB Unity SDK** — Real-time backend integration
 
 #### Rust Crates (Server Dependencies)
 
 ```toml
 [dependencies]
-spacetimedb = "1.0"           # Core SpacetimeDB framework
-serde = { version = "1.0", features = ["derive"] }
+spacetimedb = "2.0"           # Core SpacetimeDB framework
 log = "0.4"
 ```
 
@@ -211,14 +219,17 @@ log = "0.4"
 In SpacetimeDB, tables define your game's persistent state. Example:
 
 ```rust
-use spacetimedb::{table, SpacetimeType};
+use spacetimedb::{table, reducer, ReducerContext, Identity, Table};
 
-#[derive(SpacetimeType)]
-#[table(name = player, public)]
+// Tables use #[table(accessor = snake_case, public)]
+// Do NOT add #[derive(SpacetimeType)] to table structs.
+// SpacetimeType is only for custom embedded types used as fields inside rows.
+#[table(accessor = player, public)]
 pub struct Player {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
+    #[unique]
     pub identity: Identity,  // SpacetimeDB user authentication
     pub name: String,
     pub zone_id: u64,
@@ -226,7 +237,9 @@ pub struct Player {
     pub position_y: f32,
     pub health: i32,
     pub max_health: i32,
-    pub level: u32,
+    pub mana: i32,
+    pub max_mana: i32,
+    pub is_dead: bool,
 }
 ```
 
@@ -235,59 +248,79 @@ pub struct Player {
 Reducers are server-side functions that modify the database. They execute atomically with ACID guarantees:
 
 ```rust
-use spacetimedb::reducer;
-
+// ctx.sender() is a method call in SpacetimeDB 2.x (not a field)
 #[reducer]
-pub fn move_player(ctx: &ReducerContext, new_x: f32, new_y: f32) {
-    // Get the calling player
-    let player_id = ctx.sender;
-    
-    // Update player position (validated server-side)
-    ctx.db.player()
-        .id()
-        .find(&player_id)
-        .map(|player| {
-            ctx.db.player().id().update(Player {
-                position_x: new_x,
-                position_y: new_y,
-                ..player
-            })
-        });
-    
+pub fn move_player(ctx: &ReducerContext, new_x: f32, new_y: f32) -> Result<(), String> {
+    let player = ctx.db.player().identity().find(ctx.sender())
+        .ok_or_else(|| "Player not found".to_string())?;
+
+    let zone = ctx.db.zone().id().find(&player.zone_id)
+        .ok_or_else(|| "Zone not found".to_string())?;
+
+    let clamped_x = new_x.clamp(0.0, zone.terrain_width as f32);
+    let clamped_y = new_y.clamp(0.0, zone.terrain_height as f32);
+
+    ctx.db.player().id().update(Player {
+        position_x: clamped_x,
+        position_y: clamped_y,
+        ..player
+    });
+
     // All subscribed clients automatically receive this update!
+    Ok(())
 }
 ```
 
 #### Client Integration (Unity C#)
 
-Unity clients subscribe to tables and call reducers:
+Unity clients subscribe to tables and call reducers via the SpacetimeDB 2.x C# SDK:
 
 ```csharp
-using SpacetimeDB.SDK;
+using SpacetimeDB;
+using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+// SpacetimeDBManager.cs — singleton that manages the connection
+public class SpacetimeDBManager : MonoBehaviour
 {
+    public static DbConnection Conn { get; private set; }
+
     void Start()
     {
-        // Subscribe to player table
-        Player.OnInsert += OnPlayerJoined;
-        Player.OnUpdate += OnPlayerMoved;
+        Conn = DbConnection.Builder()
+            .WithUri("http://localhost:3000")
+            .WithModuleName("zoneforge-server")
+            .OnConnect(OnConnect)
+            .Build();
     }
-    
-    void OnPlayerMoved(Player oldPlayer, Player newPlayer)
+
+    void Update() => Conn?.FrameTick();
+
+    void OnConnect(DbConnection conn, Identity identity, string token)
     {
-        // Automatically called when ANY player moves
+        conn.SubscriptionBuilder()
+            .OnApplied(ctx => {
+                // Register callbacks after subscription is ready
+                conn.Db.Player.OnUpdate += OnPlayerMoved;
+            })
+            .Subscribe("SELECT * FROM player");
+    }
+
+    void OnPlayerMoved(EventContext ctx, Player oldPlayer, Player newPlayer)
+    {
+        // Automatically called when ANY player row changes
         // Update Unity GameObject position
-        transform.position = new Vector3(newPlayer.position_x, 0, newPlayer.position_y);
+        // transform.position = new Vector3(newPlayer.PositionX, 0, newPlayer.PositionY);
     }
-    
-    void Update()
+}
+
+// In PlayerController.cs — call a reducer on input
+void Update()
+{
+    if (Input.GetKey(KeyCode.W))
     {
-        if (Input.GetKey(KeyCode.W))
-        {
-            // Call server reducer to move player
-            Reducers.move_player(transform.position.x, transform.position.z + speed * Time.deltaTime);
-        }
+        Reducer.MovePlayer(SpacetimeDBManager.Conn,
+            transform.position.x,
+            transform.position.z + speed * Time.deltaTime);
     }
 }
 ```
@@ -350,9 +383,11 @@ public class PlayerController : MonoBehaviour
 │  ┌───────────────────────────────────────────────────┐  │
 │  │       Rust Game Logic (compiled to WASM)          │  │
 │  │   ┌──────────────────────────────────────────┐    │  │
-│  │   │  Tables: Player, NPC, Enemy, Item, Zone │    │  │
-│  │   │  Reducers: move_player, attack, use_item│    │  │
-│  │   │  Views: get_players_in_zone              │    │  │
+│  │   │  Tables: Player, Zone, TerrainChunk,    │    │  │
+│  │   │  EntityInstance, Ability, CombatLog,   │    │  │
+│  │   │  PlayerCooldown, StatusEffect...        │    │  │
+│  │   │  Reducers: create_zone, move_player,   │    │  │
+│  │   │  update_terrain_chunk, use_ability...  │    │  │
 │  │   └──────────────────────────────────────────┘    │  │
 │  └───────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────┐  │
@@ -410,140 +445,151 @@ The world is organized using a **hybrid storage model**:
 ```rust
 use spacetimedb::{table, SpacetimeType, Identity};
 
-#[derive(SpacetimeType)]
-#[table(name = zone, public)]
+// Zone stores terrain dimensions and water level.
+// terrain_width/height are in world units; chunks are 32×32 each.
+#[table(accessor = zone, public)]
 pub struct Zone {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
     pub name: String,
-    pub grid_width: u32,
-    pub grid_height: u32,
-    pub cell_size: f32,
+    pub terrain_width: u32,
+    pub terrain_height: u32,
+    pub water_level: f32,
 }
 
-#[derive(SpacetimeType)]
-#[table(name = entity_instance, public)]
+// Per-chunk heightmap and splatmap. create_zone initialises one row per chunk.
+#[table(accessor = terrain_chunk, public)]
+pub struct TerrainChunk {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub zone_id: u64,
+    pub chunk_x: u32,
+    pub chunk_z: u32,
+    pub height_data: Vec<u8>,  // 32×32 f32 LE = 4096 bytes
+    pub splat_data: Vec<u8>,   // 32×32 × 4 u8 = 4096 bytes
+}
+
+// entity_type is a plain String ("NPC", "Enemy", "StaticProp", etc.)
+// elevation is world-space Y (vertical height above terrain).
+#[table(accessor = entity_instance, public)]
 pub struct EntityInstance {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
     pub zone_id: u64,
-    pub prefab_name: String,      // Reference to Unity prefab
+    pub prefab_name: String,
     pub position_x: f32,
     pub position_y: f32,
-    pub rotation: f32,
-    pub entity_type: EntityType,   // NPC, Enemy, Prop, etc.
+    pub elevation: f32,
+    pub entity_type: String,
 }
 
-#[derive(SpacetimeType)]
-pub enum EntityType {
-    StaticProp,
-    Interactive,
-    NPC,
-    Enemy,
-    Player,
-    TriggerVolume,
-}
-
-#[derive(SpacetimeType)]
-#[table(name = portal, public)]
-pub struct Portal {
-    #[primary_key]
-    #[auto_inc]
-    pub id: u64,
-    pub source_zone_id: u64,
-    pub dest_zone_id: u64,
-    pub source_x: f32,
-    pub source_y: f32,
-    pub dest_spawn_point: String,
-}
+// Portal table — planned for Phase 4
+// #[table(accessor = portal, public)]
+// pub struct Portal { ... }
 ```
 
 #### Client Data (Unity ScriptableObjects)
 
 ```csharp
-// Visual and asset data that doesn't need server validation
+// Visual and asset data that doesn't need server validation.
+// The terrain mesh itself is built at runtime from TerrainChunk server data.
 [CreateAssetMenu(menuName = "ZoneForge/Zone Visual Data")]
 public class ZoneVisualData : ScriptableObject
 {
     public string zoneName;
-    public Texture2D heightMap;
-    public TileBase[] groundTiles;
-    public TileBase[] decorationTiles;
+    public Material terrainMaterial;   // splatmap shader material
+    public Material waterMaterial;     // flat water shader material
     public Material skyboxMaterial;
-    public LightingProfile lightingPreset;
+    public Color ambientColor;
 }
 ```
 
 ### 5.2 Map Creation Workflow
 
-1. Designer creates new Zone via Editor Menu: **Tools > ZoneForge > New Zone**
-2. Specify grid dimensions (32x32, 64x64, 128x128, or custom)
-3. System auto-generates:
-    - Unity scene with Tilemap Grid component (client)
-    - Zone table entry in SpacetimeDB (server)
-4. Designer paints terrain using Tile Palette (stored client-side for visuals)
-5. Zone metadata and gameplay data synced to server
-6. Optional: Generate procedural base terrain using Perlin noise heightmap
+1. Designer opens the standalone **zoneforge-editor** application (not the Unity Editor)
+2. In the **Zone Manager panel** (top-left), fill in the zone name, terrain width/height, and water level
+3. Click **Create Zone** — this calls the `create_zone` reducer, which:
+    - Inserts a `Zone` row in SpacetimeDB
+    - Initialises flat `TerrainChunk` rows for every 32×32 chunk in the grid
+4. The editor's `TerrainRenderer` receives `OnInsert` callbacks and builds the initial mesh
+5. Designer uses the **Brush Panel** (top-right) to paint height and texture layers — each brush stroke calls `update_terrain_chunk`
+6. Changes are immediately visible to all connected game clients via SpacetimeDB's automatic sync
 
 ### 5.3 Multiplayer Zone Loading
 
 When a player enters a zone:
 
 ```rust
+// Planned for Phase 4 — zone portals and transfers
 #[reducer]
-pub fn enter_zone(ctx: &ReducerContext, zone_id: u64, spawn_point: String) {
-    let player_identity = ctx.sender;
-    
-    // Update player's zone
-    ctx.db.player()
-        .identity()
-        .find(&player_identity)
-        .map(|player| {
-            ctx.db.player().id().update(Player {
-                zone_id,
-                position_x: /* get from spawn_point */,
-                position_y: /* get from spawn_point */,
-                ..player
-            })
-        });
-    
+pub fn enter_zone(ctx: &ReducerContext, zone_id: u64, spawn_x: f32, spawn_y: f32) -> Result<(), String> {
+    // ctx.sender() is a method in SpacetimeDB 2.x
+    let player = ctx.db.player().identity().find(ctx.sender())
+        .ok_or("Player not found")?;
+
+    ctx.db.player().id().update(Player {
+        zone_id,
+        position_x: spawn_x,
+        position_y: spawn_y,
+        ..player
+    });
+
     // Automatically syncs to all players subscribed to this zone!
+    Ok(())
 }
 ```
 
-Unity client automatically receives zone updates:
+Unity client automatically receives zone updates via the SpacetimeDB 2.x SDK:
 
 ```csharp
-void Start()
-{
-    // Subscribe to entities in current zone
-    EntityInstance.OnInsert += OnEntitySpawned;
-    Player.OnUpdate += OnPlayerMoved;
-}
+// In OnSubscriptionApplied callback (SpacetimeDBManager.cs):
+conn.Db.EntityInstance.OnInsert += OnEntitySpawned;
+conn.Db.Player.OnUpdate += OnPlayerMoved;
 
-void OnEntitySpawned(EntityInstance entity, ReducerEvent _)
+void OnEntitySpawned(EventContext ctx, EntityInstance entity)
 {
-    if (entity.zone_id == currentZoneId)
+    if (entity.ZoneId == currentZoneId)
     {
         // Instantiate Unity prefab
-        var prefab = Resources.Load<GameObject>(entity.prefab_name);
-        var instance = Instantiate(prefab, new Vector3(entity.position_x, 0, entity.position_y), Quaternion.identity);
+        var prefab = Resources.Load<GameObject>(entity.PrefabName);
+        var instance = Instantiate(prefab,
+            new Vector3(entity.PositionX, entity.Elevation, entity.PositionY),
+            Quaternion.identity);
     }
 }
 ```
 
-### 5.3 Tile Layer System
+### 5.3 Terrain Chunk System
 
-Each zone contains multiple tile layers rendered in order:
+Terrain is **procedurally generated from height and splat data** stored per chunk in the `TerrainChunk` table. There are no individual tile GameObjects for ground terrain.
 
-|Layer|Z-Order|Content|Collision|
-|---|---|---|---|
-|Ground|0|Grass, dirt, stone|No|
-|Decoration|1|Flowers, cracks, detail|No|
-|Collision|2|Walls, water, pits|Yes|
-|Overlay|3|Shadows, fog effects|No|
+**Chunk layout:** A zone of width W × height H is divided into chunks of 32×32 world units. Each chunk has one `TerrainChunk` row.
+
+| Data | Storage | Format |
+|---|---|---|
+| `height_data` | `Vec<u8>` | 1024 × f32 LE = 4096 bytes — one height value per sample point |
+| `splat_data` | `Vec<u8>` | 1024 × 4 bytes = 4096 bytes — RGBA blend weights for 4 texture layers |
+
+**Texture layers blended by splatmap:**
+
+| Channel | Texture | Example Use |
+|---|---|---|
+| R (255,0,0,0) | Layer 0 — Grass | Default flat terrain |
+| G (0,255,0,0) | Layer 1 — Dirt | Paths, bare earth |
+| B (0,0,255,0) | Layer 2 — Stone | Rocky outcrops, roads |
+| A (0,0,0,255) | Layer 3 — Ravine | Deep crevices, dark areas |
+
+**Rendering flow:**
+1. `TerrainRenderer` subscribes to `TerrainChunk.OnInsert` / `OnUpdate`
+2. Decodes `height_data` bytes → Mesh vertex Y positions
+3. Decodes `splat_data` bytes → per-vertex UV2 (used by the splatmap shader)
+4. Uploads Mesh to GPU; updates `MeshCollider.sharedMesh`
+
+**Water:** `WaterRenderer` renders a flat quad at `zone.water_level`. Any terrain vertex below that elevation appears submerged.
 
 ### 5.4 Zone Stitching and Portals
 
