@@ -125,6 +125,7 @@ zoneforge/                   ← umbrella repo
 
 ## See Also
 
+- [Diagrams.md](Diagrams.md) — Mermaid diagrams: architecture, schema, and workflow sequences
 - [Client.md](Client.md) — Game client architecture detail
 - [Editor.md](Editor.md) — World editor architecture detail
 - [Server.md](Server.md) — SpacetimeDB module architecture detail
