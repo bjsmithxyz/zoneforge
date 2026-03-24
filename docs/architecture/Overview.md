@@ -1,5 +1,14 @@
 # ZoneForge — System Architecture Overview
 
+## Document History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| 1.1 | 2026-03-24 | Updated table and reducer list to reflect current implementation; fixed `paint_terrain` → `update_terrain_chunk` |
+| 1.0 | 2026-02-01 | Initial document |
+
+---
+
 ## Three-Application Architecture
 
 ZoneForge consists of three applications sharing a single SpacetimeDB backend:
@@ -29,11 +38,13 @@ ZoneForge consists of three applications sharing a single SpacetimeDB backend:
              │  │  TerrainChunk, Entity,     │  │
              │  │  Ability, CombatLog,       │  │
              │  │  PlayerCooldown,           │  │
-             │  │  StatusEffect...           │  │
+             │  │  StatusEffect,             │  │
+             │  │  ManaRegenTick...          │  │
              │  └────────────────────────────┘  │
              │  ┌────────────────────────────┐  │
              │  │  Reducers (mutations)      │  │
-             │  │  create_zone, paint_terrain│  │
+             │  │  create_zone,              │  │
+             │  │  update_terrain_chunk,     │  │
              │  │  move_player, spawn_entity │  │
              │  │  use_ability, respawn      │  │
              │  └────────────────────────────┘  │
@@ -72,7 +83,7 @@ Example (terrain painting in editor):
 
 1. Designer clicks and drags on terrain — `TerrainPainter` raycasts to the Mesh
 2. Brush modifies in-memory `TerrainChunkData` (height/splat arrays)
-3. Editor calls `paint_terrain(zone_id, chunk_x, chunk_z, height_data, splat_data)` reducer
+3. Editor calls `update_terrain_chunk(zone_id, chunk_x, chunk_z, height_data, splat_data)` reducer
 4. Server updates the `TerrainChunk` table row
 5. SpacetimeDB pushes diff to all subscribers of `SELECT * FROM terrain_chunk`
 6. All Unity clients receive `OnUpdate` callback; `TerrainRenderer` rebuilds the Mesh

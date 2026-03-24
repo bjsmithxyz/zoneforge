@@ -30,13 +30,13 @@
 
 ### Group 2 — Server Core
 
-- [x] Define `Player` table (id, identity, name, position, health)
-- [x] Define `Zone` table (id, name, grid_width, grid_height)
-- [x] Define `EntityInstance` table (id, zone_id, prefab_name, position, type)
+- [x] Define `Player` table (id, identity, name, zone_id, position_x/y, health, max_health, mana, max_mana, is_dead)
+- [x] Define `Zone` table (id, name, terrain_width, terrain_height, water_level)
+- [x] Define `EntityInstance` table (id, zone_id, prefab_name, position_x/y, elevation, entity_type String)
 - [x] `create_player` reducer
-- [x] `move_player` reducer
-- [x] `create_zone` reducer
-- [x] `spawn_entity` reducer
+- [x] `move_player` reducer (validates bounds, returns Result)
+- [x] `create_zone` reducer (includes water_level param; initialises TerrainChunk rows)
+- [x] `spawn_entity` reducer (includes elevation param; returns Result)
 - [x] Build and publish module to local server
 - [x] Verify with `spacetime sql` / `spacetime call`
 
@@ -67,7 +67,7 @@
 - [x] Runtime zone creation UI (UIToolkit panel, `ZoneCreationPanel.cs` + `ZoneCreationPanel.uxml/uss`)
 - [x] Terrain system — server tables and reducers:
   - `TerrainChunk` table (`zone_id`, `chunk_x`, `chunk_z`, `height_data` byte[], `splat_data` byte[])
-  - `paint_terrain` reducer (height raise/lower/smooth + splat layer painting)
+  - `update_terrain_chunk` reducer (validates 4096-byte arrays + chunk bounds; called by editor on brush stroke)
   - `create_zone` updated: initialises flat `TerrainChunk` rows for the whole zone on creation
 - [x] Terrain system — editor runtime (`TerrainChunkData`, `TerrainBrush`, `HeightBrush`, `TextureBrush`, `CombinedBrush`, `TerrainPainter`, `TilePalettePanel`)
 - [x] Terrain system — rendering (`TerrainRenderer` mesh from height data, `WaterRenderer` flat mesh)
@@ -104,7 +104,7 @@
 - [x] `StatusEffect` table (burn, freeze, stun, poison)
 - [x] `CombatLog` table (timestamp, attacker, target, damage)
 - [x] `use_ability` reducer (server-authoritative: validate range, cooldown, mana)
-- [x] `apply_damage` reducer
+- [x] `apply_damage` helper function (plain Rust fn, not a reducer — called internally)
 - [x] Death and respawn logic
 - [x] Combat VFX — projectiles (fireball, arrow prefabs)
 
@@ -121,10 +121,10 @@
 
 ### Group 9 — Enemy AI (Basic)
 
-- [x] Enemy AI — Idle, Chase, Attack states
+- [x] Enemy AI — Idle, Chase, Attack states (client-side NavMesh; `NavMeshManager` in zoneforge-client)
 - [x] Melee, ranged, and caster behavior variants
-- [x] `AI State` table + `update_ai_state` reducer (server-side)
-- [x] `spawn_enemy` / `despawn_enemy` reducers
+- [ ] `AI State` table + `update_ai_state` reducer (server-side) ← not yet implemented in lib.rs
+- [ ] `spawn_enemy` / `despawn_enemy` reducers ← not yet implemented
 
 **Milestone: Server-authoritative combat working with 2+ players**
 
