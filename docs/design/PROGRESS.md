@@ -12,7 +12,7 @@
 - [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
 - [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
 
-**Next:** Phase 3 Group 9 — Enemy AI (Basic)
+**Next:** Phase 4 — Zone Stitching + Cloud Deployment
 
 ---
 
@@ -121,10 +121,10 @@
 
 ### Group 9 — Enemy AI (Basic)
 
-- [ ] Enemy AI — Idle, Chase, Attack states
-- [ ] Melee, ranged, and caster behavior variants
-- [ ] `AI State` table + `update_ai_state` reducer (server-side)
-- [ ] `spawn_enemy` / `despawn_enemy` reducers
+- [x] Enemy AI — Idle, Chase, Attack states
+- [x] Melee, ranged, and caster behavior variants
+- [x] `AI State` table + `update_ai_state` reducer (server-side)
+- [x] `spawn_enemy` / `despawn_enemy` reducers
 
 **Milestone: Server-authoritative combat working with 2+ players**
 
