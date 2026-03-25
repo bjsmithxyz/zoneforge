@@ -242,3 +242,19 @@ Next when resuming — Phase 4 Group 11 — Production Deployment:
 | Low | Data loss | SpacetimeDB commit log + automated backups |
 | Resolved | Technology selection | SpacetimeDB + Rust + Unity |
 | Resolved | Architecture design | Client-server hybrid, autogen bindings |
+
+---
+
+## Future / Post-Ship Considerations
+
+These features are intentionally out of scope for the current roadmap. They are preserved here for reference and may be revisited after the game ships if the business model supports them.
+
+### AI NPC Interaction System
+
+**Status:** Design complete — no implementation planned.
+
+Each NPC could respond to free-text player input using a runtime LLM (Claude API), while still being able to trigger structured game actions (start quest, give item, open shop) via LLM tool use. Per-NPC backstories and per-player relationship memory would be stored in SpacetimeDB. A stateless Python gateway service would handle all LLM communication (SpacetimeDB WASM cannot make external HTTP calls).
+
+Blocked on: resolved business model (per-call API costs at player scale).
+
+Full design: [docs/superpowers/specs/2026-03-25-ai-npc-interaction-design.md](../superpowers/specs/2026-03-25-ai-npc-interaction-design.md)
