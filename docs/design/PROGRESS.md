@@ -2,17 +2,16 @@
 
 ## Current Focus
 
-- [x] Complete development environment setup (Rust toolchain, WASM target, SpacetimeDB CLI)
-- [x] Define core tables: Player, Zone, EntityInstance
-- [x] Define core reducers: create_player, move_player, create_zone, spawn_entity
-- [x] Build and publish server module to local SpacetimeDB
-- [x] Unity 3D URP projects: game client (zoneforge-client) + standalone editor (zoneforge-editor)
-- [x] Three-repo structure: server + client + editor submodules
-- [x] SpacetimeDB C# SDK connected in both Unity projects
-- [x] Terrain system: height + splat painting, TerrainChunk table, TerrainRenderer, WaterRenderer
-- [x] Brush panel UI: TilePalettePanel with Height/Texture/Combined modes, positioned top-right
+Development paused after Phase 4 Group 10 (Zone Portals complete).
+Completed phases: 1 · 2 · 3 · 4 Group 10
 
-**Next:** Phase 4 — Zone Stitching + Cloud Deployment
+Next when resuming — Phase 4 Group 11 — Production Deployment:
+
+- Create 3 zones in the editor (Village, Forest, Cave)
+- Place and test portals between zones using the World Graph panel
+- Multi-player zone transfer testing
+- SpacetimeDB Cloud account + CI/CD pipeline
+- Production deployment and load testing
 
 ---
 
