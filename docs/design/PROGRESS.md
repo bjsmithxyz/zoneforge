@@ -123,8 +123,8 @@
 
 - [x] Enemy AI — Idle, Chase, Attack states (client-side NavMesh; `NavMeshManager` in zoneforge-client)
 - [x] Melee, ranged, and caster behavior variants
-- [ ] `AI State` table + `update_ai_state` reducer (server-side) ← not yet implemented in lib.rs
-- [ ] `spawn_enemy` / `despawn_enemy` reducers ← not yet implemented
+- [x] `AI State` column on `Enemy` table + `update_ai_state` reducer (admin override; `tick_ai` drives state machine)
+- [x] `spawn_enemy_manual` / `despawn_enemy` reducers
 
 **Milestone: Server-authoritative combat working with 2+ players**
 
@@ -134,12 +134,12 @@
 
 ### Group 10 — Zone Portals
 
-- [ ] `Portal` table (source_zone, dest_zone, spawn_point)
-- [ ] `enter_zone` reducer (zone transfer with validation)
-- [ ] Portal trigger volumes (Unity collision)
-- [ ] Zone loading UI and scene cleanup
-- [ ] Zone subscription management (subscribe/unsubscribe on transfer)
-- [ ] World Graph editor window (node-based zone visualisation)
+- [x] `Portal` table (source_zone, dest_zone, spawn_point)
+- [x] `enter_zone` reducer (zone transfer with validation)
+- [x] Portal trigger volumes (Unity collision) — PortalManager ring GOs + proximity trigger
+- [x] Zone loading UI and scene cleanup — RippleWarpEffect screen-space warp + ZoneTransferManager
+- [x] Zone subscription management (subscribe/unsubscribe on transfer)
+- [x] World Graph editor window — WorldGraphPanel with node canvas + edge drawing + PortalRenderer
 
 ### Group 11 — Production Deployment
 
@@ -156,7 +156,7 @@
 
 ## Phase 5: Systems Polish
 
-### Group 12 — Triggers & Quests
+### Group 12 — Triggers, Quests & NPC Authoring
 
 - [ ] `Trigger` table (trigger_type, zone_id, conditions, actions)
 - [ ] `OnEnter` and `OnInteract` trigger types
@@ -168,6 +168,8 @@
 - [ ] Quest reducers: start, update_objective, complete
 - [ ] Quest UI — journal and dialogue tree
 - [ ] 3 interconnected quest chains
+- [ ] **Editor tool:** NPC creation panel — define NPC archetypes (name, dialogue lines, vendor inventory, quest-giver flag)
+- [ ] **Editor tool:** Quest designer panel — visual quest chain builder (nodes for objectives, rewards, prerequisites)
 
 ### Group 13 — Inventory & Loot
 
@@ -179,6 +181,7 @@
 - [ ] Equipment character sheet UI
 - [ ] Loot table system and drop-on-death
 - [ ] Pickup item reducer (collision-based)
+- [ ] **Editor tool:** Loot creation panel — define item templates and loot tables (drop chances, rarity tiers, enemy/chest assignment)
 
 ### Group 14 — Interiors & Atmosphere
 
@@ -204,7 +207,6 @@
 - [ ] Party reducers (create, invite, join, leave)
 - [ ] Shared quest progress and loot distribution
 - [ ] Party UI (member list with health bars)
-- [ ] Party teleport
 
 ### Group 16 — PvP & Guilds
 
@@ -222,9 +224,6 @@
 - [ ] Trade, bid, and buyout reducers
 - [ ] Currency system (gold, gems, tokens)
 - [ ] `Crafting` table + craft reducer
-- [ ] `WorldEvent` table + trigger reducer
-- [ ] World boss spawning and dynamic events
-- [ ] Seasonal content and achievement system
 
 **Milestone: Full multiplayer RPG feature set complete**
 
