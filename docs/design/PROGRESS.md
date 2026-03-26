@@ -2,15 +2,9 @@
 
 ## Current Focus
 
-Phase 4 Group 11 in progress. Zones, portals, and zone transfer are working in the client.
+Phase 5 Group 12 up next. All local systems through Phase 4 complete.
 
-Completed phases: 1 · 2 · 3 · 4 Groups 1–10, 11 (partial)
-
-Remaining for next session — Phase 4 Group 11:
-
-- SpacetimeDB Cloud account + CI/CD pipeline
-- Production deployment
-- Load testing (10+ concurrent players)
+Completed phases: 1 · 2 · 3 · 4 (local)
 
 ---
 
@@ -139,16 +133,13 @@ Remaining for next session — Phase 4 Group 11:
 - [x] Zone subscription management (subscribe/unsubscribe on transfer)
 - [x] World Graph editor window — WorldGraphPanel with node canvas + edge drawing + PortalRenderer
 
-### Group 11 — Production Deployment
+### Group 11 — Zone Content & Testing
 
 - [x] Create 3 zones: Village, Forest, Cave
 - [x] Place and test portals between all zones
 - [x] Multi-player zone transfer testing (single-client verified; server handles concurrent players)
-- [ ] SpacetimeDB Cloud account and CI/CD pipeline
-- [ ] Production deployment
-- [ ] Load testing (10+ concurrent players)
 
-**Milestone: Multi-zone world accessible via SpacetimeDB Cloud**
+**Milestone: Multi-zone world with portals working locally**
 
 ---
 
@@ -224,6 +215,18 @@ Remaining for next session — Phase 4 Group 11:
 - [ ] `Crafting` table + craft reducer
 
 **Milestone: Full multiplayer RPG feature set complete**
+
+---
+
+## Phase 7: Cloud Deployment
+
+### Group 18 — Production Deployment
+
+- [ ] SpacetimeDB Cloud account and CI/CD pipeline
+- [ ] Production deployment
+- [ ] Load testing (10+ concurrent players)
+
+**Milestone: Multi-zone world accessible via SpacetimeDB Cloud**
 
 ---
 
