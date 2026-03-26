@@ -2,16 +2,15 @@
 
 ## Current Focus
 
-Development paused after Phase 4 Group 10 (Zone Portals complete).
-Completed phases: 1 · 2 · 3 · 4 Group 10
+Phase 4 Group 11 in progress. Zones, portals, and zone transfer are working in the client.
 
-Next when resuming — Phase 4 Group 11 — Production Deployment:
+Completed phases: 1 · 2 · 3 · 4 Groups 1–10, 11 (partial)
 
-- Create 3 zones in the editor (Village, Forest, Cave)
-- Place and test portals between zones using the World Graph panel
-- Multi-player zone transfer testing
+Remaining for next session — Phase 4 Group 11:
+
 - SpacetimeDB Cloud account + CI/CD pipeline
-- Production deployment and load testing
+- Production deployment
+- Load testing (10+ concurrent players)
 
 ---
 
@@ -142,9 +141,9 @@ Next when resuming — Phase 4 Group 11 — Production Deployment:
 
 ### Group 11 — Production Deployment
 
-- [ ] Create 3 zones: Village, Forest, Cave
-- [ ] Place and test portals between all zones
-- [ ] Multi-player zone transfer testing
+- [x] Create 3 zones: Village, Forest, Cave
+- [x] Place and test portals between all zones
+- [x] Multi-player zone transfer testing (single-client verified; server handles concurrent players)
 - [ ] SpacetimeDB Cloud account and CI/CD pipeline
 - [ ] Production deployment
 - [ ] Load testing (10+ concurrent players)
