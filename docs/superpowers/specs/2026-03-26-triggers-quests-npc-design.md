@@ -241,6 +241,60 @@ Add to player-filtered (new filter category): `quest_progress`, `objective_progr
 5. Save button serializes the graph and calls appropriate batch reducers (`create_dialogue_tree`, `create_quest`, `create_trigger`).
 6. Unsaved changes indicator (asterisk in panel title).
 
+**Import/Export:**
+- **Import from File**: button opens a file picker. Loads a `.quest.json` file onto the canvas. The file format uses human-readable names (e.g., `"forest-ranger"`) instead of numeric IDs — resolved to database IDs on import by looking up NpcDefinition, Item, Quest, and EnemyDefinition tables by name. Missing references flagged as validation errors.
+- **Export to File**: button serializes the current canvas graph to a `.quest.json` file. Resolves numeric IDs back to human-readable names for readability and portability.
+- **Bulk import**: a "Scan Directory" option imports all `.quest.json` files from a chosen directory, resolving dependencies in topological order (prerequisites before dependents).
+- Canonical data lives in SpacetimeDB tables. Files are an authoring convenience and version control format.
+
+Quest file format example:
+```json
+{
+  "name": "Forest Patrol",
+  "description": "Clear the goblins from the forest.",
+  "prerequisites": ["welcome-to-the-village"],
+  "reward": [{"type": "give_item", "item": "cave-key", "count": 1}],
+  "dialogue": {
+    "npc": "forest-ranger",
+    "nodes": [
+      {"id": "start", "text": "Halt! The forest is dangerous.", "choices": [
+        {"text": "The Elder sent me.", "condition": [{"type": "has_item", "item": "village-map"}], "next": "recognized"},
+        {"text": "I can handle myself.", "next": "prove-it"}
+      ]},
+      {"id": "recognized", "text": "Ah, you carry the Elder's map.", "choices": [
+        {"text": "What do you need?", "next": "task"}
+      ]},
+      {"id": "task", "text": "Kill 3 goblins and bring back 2 teeth.", "choices": [
+        {"text": "I'll return with the teeth.", "action": [{"type": "start_quest"}]}
+      ]}
+    ]
+  },
+  "objectives": [
+    {"description": "Kill Goblins", "type": "KillEnemy", "target": "goblin", "count": 3,
+     "loot_on_kill": {"item": "goblin-tooth", "count": 1}},
+    {"description": "Collect Goblin Teeth", "type": "CollectItem", "target": "goblin-tooth", "count": 2}
+  ]
+}
+```
+
+**Validation & Error Highlighting:**
+
+Live validation runs on load, on edit (debounced), and on save. Nodes and edges are color-coded:
+
+| Level | Visual | Meaning | Examples |
+|-------|--------|---------|---------|
+| Error (red) | Red border + red edges | Broken, will not function | Referenced NPC/item/quest doesn't exist in database, orphaned node (no connections), missing required field (empty text, no target), prerequisite quest doesn't exist |
+| Warning (yellow) | Yellow border | Suspicious but functional | Terminal dialogue node (no choices — intentional?), objective with count=0, unreachable nodes in graph |
+| Valid | Normal border | No issues | — |
+
+Validation checks:
+- **Dangling references**: NPC name/ID not found in NpcDefinition, item not in Item table, prerequisite quest not in Quest table, enemy_def not in EnemyDefinition
+- **Graph integrity**: orphaned nodes not reachable from root, dialogue choices pointing to nonexistent node IDs, cycles with no exit path (infinite loop)
+- **Missing fields**: quest with no objectives, objective with no target, trigger with no action, dialogue node with empty text
+- **Cross-quest**: prerequisite dependency cycle (A requires B requires A)
+
+Error panel: collapsible list at the bottom of the Visual Scripting Panel. Each entry shows the error/warning message. Clicking an entry selects and pans to the problematic node. Errors block save with a summary dialog. Warnings allow save with confirmation.
+
 ### Item Definition Panel (minimal, added to editor)
 
 - Simple form panel: name, description, item_type (TextField), max_stack (IntegerField).
