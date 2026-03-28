@@ -2,9 +2,15 @@
 
 ## Current Focus
 
-Phase 5 Group 12 up next. All local systems through Phase 4 complete.
+Phase 5 Group 12 complete. Triggers, quests, NPC authoring, and visual scripting panel all implemented.
 
-Completed phases: 1 · 2 · 3 · 4 (local)
+Completed phases: 1 · 2 · 3 · 4 (local) · 5 Group 12
+
+Remaining for Phase 4 Group 11:
+
+- SpacetimeDB Cloud account + CI/CD pipeline
+- Production deployment
+- Load testing (10+ concurrent players)
 
 ---
 
@@ -147,23 +153,26 @@ Completed phases: 1 · 2 · 3 · 4 (local)
 
 ### Group 12 — Triggers, Quests & NPC Authoring
 
-- [ ] `Trigger` table (trigger_type, zone_id, conditions, actions)
-- [ ] `OnEnter` and `OnInteract` trigger types
-- [ ] Condition system (has_item, quest_status, player_level)
-- [ ] Action system (spawn_entity, play_sound, give_item)
-- [ ] Visual Scripting UI for triggers
-- [ ] `Quest` table (objectives, rewards, prerequisites)
-- [ ] `QuestProgress` table (player_id, quest_id, objective_states)
-- [ ] Quest reducers: start, update_objective, complete
-- [ ] Quest UI — journal and dialogue tree
-- [ ] 3 interconnected quest chains
-- [ ] **Editor tool:** NPC creation panel — define NPC archetypes (name, dialogue lines, vendor inventory, quest-giver flag)
-- [ ] **Editor tool:** Quest designer panel — visual quest chain builder (nodes for objectives, rewards, prerequisites)
+- [x] `Trigger` table (trigger_type, zone_id, conditions, actions)
+- [x] `OnEnter` and `OnInteract` trigger types
+- [x] Condition system (has_item, quest_status, player_level)
+- [x] Action system (spawn_entity, play_sound, give_item, start_quest)
+- [x] Visual Scripting UI for triggers (node graph with validation, import/export)
+- [x] `Quest` table (objectives, rewards, prerequisites)
+- [x] `QuestProgress` table (player_id, quest_id, objective_states)
+- [x] Quest reducers: accept, complete, abandon + auto-tracking hooks
+- [x] Quest UI — journal (J key), tracker HUD, dialogue UI
+- [x] 3 interconnected quest chains (.quest.json files)
+- [x] **Editor tool:** NPC creation panel — define NPC archetypes (name, type, place in zone)
+- [x] **Editor tool:** Quest designer panel — visual node graph builder (Dialogue, Choice, Quest, Objective, Trigger nodes)
+- [x] **Editor tool:** Item definition panel — create/delete item definitions
+- [x] Client: NpcManager, TriggerManager, DialogueUI, QuestUI, InventoryUI
+- [x] Server: Item/Inventory/NPC/Dialogue tables + reducers (pulled forward from Group 13)
 
 ### Group 13 — Inventory & Loot
 
-- [ ] `Item` table (item definitions)
-- [ ] `Inventory` table (player_id, item_id, quantity, slot)
+- [x] `Item` table (item definitions) — done in Group 12
+- [x] `Inventory` table (player_id, item_id, quantity) — done in Group 12
 - [ ] `Equipment` table (weapon, armor, accessory slots)
 - [ ] Inventory, equip, and loot reducers
 - [ ] Inventory grid UI with drag-and-drop and tooltips
