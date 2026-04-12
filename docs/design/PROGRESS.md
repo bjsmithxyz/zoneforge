@@ -173,13 +173,13 @@ Remaining for Phase 4 Group 11:
 
 - [x] `Item` table (item definitions) — done in Group 12
 - [x] `Inventory` table (player_id, item_id, quantity) — done in Group 12
-- [ ] `Equipment` table (weapon, armor, accessory slots)
-- [ ] Inventory, equip, and loot reducers
-- [ ] Inventory grid UI with drag-and-drop and tooltips
-- [ ] Equipment character sheet UI
-- [ ] Loot table system and drop-on-death
-- [ ] Pickup item reducer (collision-based)
-- [ ] **Editor tool:** Loot creation panel — define item templates and loot tables (drop chances, rarity tiers, enemy/chest assignment)
+- [x] `Equipment` table (weapon, armor, accessory slots)
+- [x] Inventory, equip, and loot reducers
+- [x] Inventory grid UI with drag-and-drop and tooltips
+- [x] Equipment character sheet UI
+- [x] Loot table system and drop-on-death
+- [x] Pickup item reducer (proximity-based, F key)
+- [x] **Editor tool:** Loot creation panel — define item templates and loot tables (drop chances, rarity tiers, enemy/chest assignment)
 
 ### Group 14 — Interiors & Atmosphere
 
