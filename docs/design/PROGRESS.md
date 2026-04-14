@@ -2,9 +2,11 @@
 
 ## Current Focus
 
-Phase 5 Group 12 complete. Triggers, quests, NPC authoring, and visual scripting panel all implemented.
+Phase 5 Group 13 complete. Inventory, equipment, loot drops, loot tables all implemented.
 
-Completed phases: 1 · 2 · 3 · 4 (local) · 5 Group 12
+Next: Phase 5 Group 14 — Atmosphere Systems (lighting, weather, ambient sound). Design spec: [2026-04-14-group-14-atmosphere-design.md](../superpowers/specs/2026-04-14-group-14-atmosphere-design.md).
+
+Completed phases: 1 · 2 · 3 · 4 (local) · 5 Groups 12–13
 
 Remaining for Phase 4 Group 11:
 
@@ -181,19 +183,44 @@ Remaining for Phase 4 Group 11:
 - [x] Pickup item reducer (proximity-based, F key)
 - [x] **Editor tool:** Loot creation panel — define item templates and loot tables (drop chances, rarity tiers, enemy/chest assignment)
 
-### Group 14 — Interiors & Atmosphere
+### Group 14 — Atmosphere Systems
 
-- [ ] Interior zone type (building interiors as separate zones)
-- [ ] Furniture placement editor tool
-- [ ] Door/window prefabs with state table + toggle reducer
-- [ ] Lighting preset ScriptableObjects + runtime application
-- [ ] Baked lightmaps for interiors
-- [ ] Dynamic lights (torches, magic orbs)
-- [ ] Post-processing profiles per zone
-- [ ] `WeatherState` table + `change_weather` reducer
-- [ ] Ambient sound system
+Scope: lighting + weather + ambient sound. Interior instances, furniture, doors, and dynamic point lights deferred to later phases (see design spec [2026-04-14-group-14-atmosphere-design.md](../superpowers/specs/2026-04-14-group-14-atmosphere-design.md)).
 
-**Milestone: Polished multiplayer village with quests, inventory, and atmosphere**
+**Server**
+
+- [ ] `WeatherKind` enum + `WeatherState` table (per-zone row)
+- [ ] `WorldClock` single-row table + `tick_world_time` scheduled reducer
+- [ ] `change_weather` reducer (admin-gated)
+- [ ] `set_zone_mood` reducer (admin-gated)
+- [ ] `Zone.mood_preset_id: u32` column
+- [ ] Bootstrap: insert `WorldClock` in `init`; default `WeatherState` on zone creation
+
+**Client (shared — both `client/` and `editor/`)**
+
+- [ ] `MoodPreset` ScriptableObject (sun/ambient/fog curves, post-fx profile, base audio)
+- [ ] `MoodPresetRegistry` (id → asset lookup from `Resources/MoodPresets/`)
+- [ ] `AtmosphereController` MonoBehaviour (sub clock + weather, apply curves)
+- [ ] Weather VFX prefabs: rain, fog (storm/snow stubs)
+- [ ] `AmbientAudioMixer` MonoBehaviour (3-layer crossfade: base/weather/time)
+- [ ] `AudioMixer` asset with Master → Ambient → {Base, Weather, Time} groups
+
+**Editor authoring**
+
+- [ ] Zone Inspector: Mood Preset dropdown
+- [ ] Admin weather debug panel (buttons per `WeatherKind` + intensity slider)
+
+**Content (minimal)**
+
+- [ ] 3 MoodPresets: `village_day`, `forest`, `night_camp`
+- [ ] 1 ambient clip per preset
+- [ ] Rain + fog VFX fully wired
+
+**Milestone: Basic multiplayer village with quests, inventory, and atmosphere — feature-complete for Phase 5.**
+
+### Phase 5 Polish Pass (before Phase 6)
+
+Multiple rounds of polish touching every prior group: combat feel, UI refinement, editor UX, server perf, bug sweep. Not tracked as a numbered group — open-ended until quality bar met.
 
 ---
 
