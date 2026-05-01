@@ -2,11 +2,11 @@
 
 ## Current Focus
 
-Phase 5 Group 13 complete. Inventory, equipment, loot drops, loot tables all implemented.
+Phase 5 Group 14 complete. Atmosphere systems shipped: server-authoritative WorldClock + WeatherState, sun/ambient/fog driven by mood presets, weather VFX, 3-layer ambient audio mixer, editor mood dropdown, admin weather debug panel.
 
-Next: Phase 5 Group 14 — Atmosphere Systems (lighting, weather, ambient sound). Design spec: [2026-04-14-group-14-atmosphere-design.md](../superpowers/specs/2026-04-14-group-14-atmosphere-design.md).
+Next: Phase 5 Polish Pass — open-ended quality work across prior groups.
 
-Completed phases: 1 · 2 · 3 · 4 (local) · 5 Groups 12–13
+Completed phases: 1 · 2 · 3 · 4 (local) · 5 Groups 12–14
 
 Remaining for Phase 4 Group 11:
 
@@ -189,32 +189,33 @@ Scope: lighting + weather + ambient sound. Interior instances, furniture, doors,
 
 **Server**
 
-- [ ] `WeatherKind` enum + `WeatherState` table (per-zone row)
-- [ ] `WorldClock` single-row table + `tick_world_time` scheduled reducer
-- [ ] `change_weather` reducer (admin-gated)
-- [ ] `set_zone_mood` reducer (admin-gated)
-- [ ] `Zone.mood_preset_id: u32` column
-- [ ] Bootstrap: insert `WorldClock` in `init`; default `WeatherState` on zone creation
+- [x] `WeatherKind` enum + `WeatherState` table (per-zone row)
+- [x] `WorldClock` single-row table + `tick_world_time` scheduled reducer
+- [x] `change_weather` reducer (admin-gated)
+- [x] `set_zone_mood` reducer (admin-gated)
+- [x] `Zone.mood_preset_id: u32` column
+- [x] Bootstrap: insert `WorldClock` in `init`; default `WeatherState` on zone creation
 
 **Client (shared — both `client/` and `editor/`)**
 
-- [ ] `MoodPreset` ScriptableObject (sun/ambient/fog curves, post-fx profile, base audio)
-- [ ] `MoodPresetRegistry` (id → asset lookup from `Resources/MoodPresets/`)
-- [ ] `AtmosphereController` MonoBehaviour (sub clock + weather, apply curves)
-- [ ] Weather VFX prefabs: rain, fog (storm/snow stubs)
-- [ ] `AmbientAudioMixer` MonoBehaviour (3-layer crossfade: base/weather/time)
-- [ ] `AudioMixer` asset with Master → Ambient → {Base, Weather, Time} groups
+- [x] `MoodPreset` ScriptableObject (sun/ambient/fog curves, post-fx profile, base audio)
+- [x] `MoodPresetRegistry` (id → asset lookup from `Resources/MoodPresets/`)
+- [x] `AtmosphereController` MonoBehaviour (sub clock + weather, apply curves)
+- [x] Weather VFX prefabs: rain, fog (storm/snow stubs)
+- [x] `AmbientAudioMixer` MonoBehaviour (3-layer crossfade: base/weather/time)
+- [x] `AudioMixer` asset with Master → Ambient → {Base, Weather, Time} groups
+- [x] Terrain shader gains Lambert + ambient lighting so atmosphere is visible
 
 **Editor authoring**
 
-- [ ] Zone Inspector: Mood Preset dropdown
-- [ ] Admin weather debug panel (buttons per `WeatherKind` + intensity slider)
+- [x] Zone Inspector: Mood Preset dropdown
+- [x] Admin weather debug panel (buttons per `WeatherKind` + intensity slider)
 
 **Content (minimal)**
 
-- [ ] 3 MoodPresets: `village_day`, `forest`, `night_camp`
-- [ ] 1 ambient clip per preset
-- [ ] Rain + fog VFX fully wired
+- [x] 3 MoodPresets: `village_day`, `forest`, `night_camp`
+- [ ] 1 ambient clip per preset (deferred — no audio assets sourced yet)
+- [x] Rain + fog VFX fully wired (storm/snow stubbed as Rain duplicates)
 
 **Milestone: Basic multiplayer village with quests, inventory, and atmosphere — feature-complete for Phase 5.**
 
