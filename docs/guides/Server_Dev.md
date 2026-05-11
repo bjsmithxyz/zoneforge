@@ -79,13 +79,21 @@ pub fn my_action(ctx: &ReducerContext, arg: String) {
 ## Testing with the CLI
 
 ```bash
-# Call a reducer
-spacetime call --server local zoneforge-server create_zone "Village" 64 64
+# Call a reducer — args are space-separated, each is parsed as JSON.
+# Note: from a worktree, --server local is required (worktree config doesn't carry the default).
+spacetime call --server local zoneforge-server create_zone '"Village"' 64 64 0.0
 
 # Query a table
 spacetime sql --server local zoneforge-server "SELECT * FROM zone"
 spacetime sql --server local zoneforge-server "SELECT * FROM player"
+
+# Enum variants in args use lowercase JSON tag form:
+spacetime call --server local zoneforge-server create_enemy_def \
+  '"Wolf"' '{"melee":{}}' '"wolf"' 60 12 8.0 1.8 1200 3.0
 ```
+
+> `spacetime` CLI string args are sensitive to quote encoding — pasted curly quotes (`"`) silently corrupt JSON. Type commands manually or call from the editor UI.
+> The `UNSTABLE` warning on `spacetime sql` / `spacetime call` is expected and not an error.
 
 ## Linting & Formatting
 

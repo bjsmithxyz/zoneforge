@@ -50,7 +50,7 @@ Unity 6 LTS is expected to be released in late 2026. The project should evaluate
 
 1. Unity 6 receives its first LTS designation
 2. SpacetimeDB Unity SDK explicitly validates Unity 6 support
-3. Phase 2 (combat + cloud deployment) is complete — mid-project engine upgrades carry high risk
+3. Phase 5 polish + cloud deployment is complete — mid-project engine upgrades carry high risk
 
 ---
 
@@ -66,6 +66,6 @@ Unity 6 LTS is expected to be released in late 2026. The project should evaluate
 
 ## Consequences
 
-- `client/ProjectSettings/ProjectVersion.txt` is pinned to `2022.3.62f3`
+- `client/ProjectSettings/ProjectVersion.txt` AND `editor/ProjectSettings/ProjectVersion.txt` are both pinned to `2022.3.62f3` — both Unity projects must upgrade together
 - All documentation references "Unity 2022.3 LTS" — do not update to "Unity 6" until an upgrade decision is made
 - Unity Hub must have the 2022.3.x LTS editor installed; Unity 6 editor is not required

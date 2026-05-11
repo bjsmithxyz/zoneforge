@@ -63,14 +63,14 @@ Tables are the data model. Reducers are the API. Clients subscribe to tables. Th
 |------|-----------|
 | SpacetimeDB is newer than Postgres/Redis — smaller community | Official Discord is active; Clockwork Labs team is responsive; docs are improving |
 | Schema migrations require `--delete-data` during early dev | Acceptable pre-launch; SpacetimeDB is adding migration support |
-| Rust learning curve for contributors unfamiliar with the language | Server logic is isolated in `server/src/lib.rs`; contributors can focus on Unity client without touching Rust |
+| Rust learning curve for contributors unfamiliar with the language | Server logic is isolated in `server/spacetimedb/src/` (split into `lib.rs`, `terrain.rs`, `combat.rs`, `enemy.rs`, `portal.rs`, `inventory.rs`, `loot.rs`, `atmosphere.rs`); contributors can focus on Unity client/editor without touching Rust |
 | SpacetimeDB Cloud pricing at scale | Self-hosted option available; cloud pricing is usage-based |
 
 ---
 
 ## Consequences
 
-- Server module lives in `server/` (Rust WASM), client in `client/` (Unity C#)
+- Server module lives in `server/` (Rust WASM); the game client lives in `client/` (Unity C#) and the standalone world editor in `editor/` (Unity C#) — both consume the same generated SpacetimeDB bindings
 - All game-critical logic is in Rust reducers — no gameplay code in Unity
-- Client bindings are generated (`spacetime generate`) and must be regenerated after schema changes
+- Client bindings are generated (`spacetime generate`) for both `client/` and `editor/` and must be regenerated after schema changes
 - Local development requires SpacetimeDB CLI (`spacetime start`) running alongside Unity

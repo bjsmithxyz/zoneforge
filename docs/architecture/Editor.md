@@ -1,15 +1,24 @@
 # ZoneForge — World Editor Architecture
 
+## Document History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| 1.2 | 2026-05-10 | Added EnemyDef/Loot/WorldGraph/Toolbar/WeatherDebug panels; EnemyRenderer + PortalRenderer; AtmosphereController + AmbientAudioMixer; CameraController; asmdef set updated (`ZoneForgeData` split out) |
+| 1.1 | 2026-03-07 | Initial three-panel UI documentation |
+
+---
+
 ## What It Is
 
 `zoneforge-editor` is a **standalone desktop application** built in Unity 2022.3 LTS (3D URP). It is not a Unity Editor tool — it is a compiled executable that designers run independently, like WoWEdit or StarEdit.
 
-It connects to the same SpacetimeDB backend as the game client. Changes made in the editor (zones, tiles, entities) are immediately visible to all connected game clients in real time.
+It connects to the same SpacetimeDB backend as the game client. Changes made in the editor (zones, terrain, entities, portals, enemy defs, loot tables, atmosphere) are immediately visible to all connected game clients in real time.
 
 ## Engine & Rendering
 
-- **Unity 2022.3 LTS** with **Universal Render Pipeline (URP), 3D**
-- Top-down / isometric camera perspective (orthographic)
+- **Unity 2022.3 LTS** (2022.3.62f3) with **Universal Render Pipeline (URP), 3D**
+- Top-down / isometric camera perspective
 - 3D world on the X/Z plane (Y = up)
 - Target platforms: Windows, macOS, Linux
 
@@ -18,127 +27,189 @@ It connects to the same SpacetimeDB backend as the game client. Changes made in 
 ```text
 Assets/
 ├── Scripts/
-│   ├── Runtime/        ← MonoBehaviours and runtime managers
-│   │   ├── SpacetimeDBManager.cs      ← singleton; connects and subscribes to Zone, TerrainChunk, EntityInstance
-│   │   ├── ZoneCreationPanel.cs       ← UIToolkit panel: zone name/size form, existing zones list; collapsible
-│   │   ├── TilePalettePanel.cs        ← UIToolkit panel: brush type selector, radius/strength sliders; collapsible
-│   │   ├── EntityPalettePanel.cs      ← UIToolkit panel: entity types grouped by NPC/Enemy/Prop; click to select
-│   │   ├── TerrainPainter.cs          ← raycast-based terrain painting; calls paint_terrain reducer
-│   │   ├── TerrainRenderer.cs         ← subscribes to TerrainChunk; builds/updates Mesh + MeshCollider per chunk
-│   │   ├── WaterRenderer.cs           ← flat quad mesh at zone.water_level
-│   │   ├── EntityPlacer.cs            ← click-to-place entities; raycasts terrain collider (Y=0 fallback)
-│   │   ├── EntityRenderer.cs          ← subscribes to EntityInstance; spawns/removes placeholder cubes
-│   │   ├── EntityDefinition.cs        ← data class: DisplayName, PrefabName, EntityType, Color
-│   │   ├── TerrainBrush.cs            ← abstract brush base (radius, strength, falloff)
-│   │   ├── HeightBrush.cs             ← raise/lower/smooth terrain height
-│   │   ├── TextureBrush.cs            ← paint splatmap layer
-│   │   ├── CombinedBrush.cs           ← height + texture in one stroke
-│   │   ├── EditorState.cs             ← active zone selection, hover state
-│   │   └── UIHoverTracker.cs          ← prevents terrain painting while hovering UI
-│   ├── Data/           ← ScriptableObject and data model definitions
+│   ├── Runtime/                              ← MonoBehaviours and runtime managers
+│   │   ├── SpacetimeDBManager.cs             ← singleton; connect + subscribe + tick
+│   │   ├── EditorState.cs                    ← active zone selection, hover state
+│   │   ├── UIHoverTracker.cs                 ← blocks terrain painting while hovering UI
+│   │   ├── CameraController.cs               ← orbit / pan / zoom in 3D
+│   │   ├── ToolbarController.cs              ← top toolbar (panel toggles)
+│   │   │
+│   │   ├── ZoneCreationPanel.cs              ← UIToolkit: zone form, list of zones,
+│   │   │                                       MoodPreset dropdown
+│   │   ├── TilePalettePanel.cs               ← UIToolkit: brush type/mode/layer/radius/strength
+│   │   ├── EntityPalettePanel.cs             ← UIToolkit: NPC/Enemy/Prop palette
+│   │   ├── EnemyDefCreationPanel.cs          ← UIToolkit: define enemy archetypes
+│   │   ├── LootCreationPanel.cs              ← UIToolkit: item defs + loot tables
+│   │   ├── WorldGraphPanel.cs                ← UIToolkit: portal node graph, edges, drag-to-create
+│   │   ├── WeatherDebugPanel.cs              ← UIToolkit (admin): weather kind + intensity, mood
+│   │   │
+│   │   ├── TerrainPainter.cs                 ← raycast-based painting; calls update_terrain_chunk
+│   │   ├── TerrainRenderer.cs                ← subscribes to TerrainChunk; builds Mesh + MeshCollider
+│   │   ├── WaterRenderer.cs                  ← flat quad mesh at zone.water_level
+│   │   ├── TerrainBrush.cs                   ← abstract brush base (radius, strength, falloff)
+│   │   ├── HeightBrush.cs                    ← raise/lower/smooth terrain height
+│   │   ├── TextureBrush.cs                   ← paint splatmap layer
+│   │   ├── CombinedBrush.cs                  ← height + texture in one stroke
+│   │   ├── TerrainChunkData.cs               ← in-memory height/splat grid + index helpers
+│   │   │
+│   │   ├── EntityPlacer.cs                   ← click-to-place; spawn_entity reducer
+│   │   ├── EntityRenderer.cs                 ← placeholder cubes per EntityInstance row
+│   │   ├── EntityDefinition.cs               ← data class (DisplayName, PrefabName, EntityType, Color)
+│   │   ├── EnemyRenderer.cs                  ← visualises live Enemy rows + spawn points
+│   │   ├── PortalRenderer.cs                 ← visualises Portal rows on the terrain
+│   │   │
+│   │   ├── AtmosphereController.cs           ← applies MoodPreset (sun/ambient/fog/post-fx)
+│   │   └── AmbientAudioMixer.cs              ← 3-layer crossfade: base/weather/time
+│   │
+│   ├── Data/                                 ← ScriptableObjects (asmdef: ZoneForgeData)
 │   │   ├── WorldData.cs
 │   │   ├── ZoneVisualData.cs
-│   │   └── TerrainChunkData.cs        ← in-memory height/splat grid; WorldToChunk/WorldToLocalIndex helpers
-│   ├── ZoneForgeRuntime.asmdef        ← assembly definition: references SpacetimeDB SDK + ZoneForgeAutogen
-│   └── autogen/        ← Generated by `spacetime generate` — do not edit
-│       └── ZoneForgeAutogen.asmdef    ← assembly definition: references SpacetimeDB SDK only
-├── UI/
-│   ├── ZoneCreationPanel.uxml         ← zone form (name, width, height, water level, existing zones list)
-│   ├── ZoneCreationPanel.uss          ← styles; panel anchored top-left (320px)
-│   ├── TilePalettePanel.uxml          ← brush type (Texture/Height/Combined), Mode, Layer, Radius, Strength
-│   ├── TilePalettePanel.uss           ← styles; panel anchored top-right (260px)
-│   ├── EntityPalettePanel.uxml        ← entity palette container (grid populated in C#)
-│   └── EntityPalettePanel.uss         ← styles; panel anchored bottom-right (180px), left of Brush Panel
+│   │   ├── MoodPreset.cs
+│   │   └── MoodPresetRegistry.cs
+│   │
+│   ├── Editor/                               ← Editor-only dev tools (excluded from builds)
+│   │   ├── PlaceholderSpriteGenerator.cs
+│   │   └── PlaceholderTileGenerator.cs
+│   │
+│   └── autogen/                              ← `spacetime generate` output (DO NOT EDIT)
+│       ├── Tables/  Reducers/  Types/
+│       └── ZoneForgeAutogen.asmdef
+│
+├── UI/                                       ← UI Toolkit assets
+│   ├── ZoneCreationPanel.uxml/.uss           ← zone form, anchored top-left
+│   ├── TilePalettePanel.uxml/.uss            ← brush controls, top-right
+│   ├── EntityPalettePanel.uxml/.uss          ← entity grid, bottom-right
+│   ├── ToolbarController.uxml/.uss           ← top toolbar
+│   ├── WorldGraphPanel.uxml/.uss             ← portal node canvas
+│   └── LootCreationPanel.uss                 ← (UXML built programmatically)
+│
+├── Resources/
+│   ├── MoodPresets/                          ← village_day, forest, night_camp
+│   └── WeatherVFX/                           ← Rain, fog (Storm/Snow stubbed)
+│
 ├── Materials/
-│   ├── TerrainSplatmap.mat            ← terrain material (references TerrainSplatmap.shader)
-│   └── WaterUnlit.mat                 ← water material (references WaterUnlit.shader)
+│   ├── TerrainSplatmap.mat                   ← references TerrainSplatmap.shader
+│   └── WaterUnlit.mat                        ← references WaterUnlit.shader
 ├── Shaders/
-│   ├── TerrainSplatmap.shader         ← splatmap blending shader
-│   └── WaterUnlit.shader              ← flat water colour shader
-└── Art/
-    ├── Sprites/        ← Entity thumbnail sprites for entity palette UI
-    └── Prefabs/        ← Reusable prefabs
-
+│   ├── TerrainSplatmap.shader                ← splat-blend + Lambert + ambient
+│   └── WaterUnlit.shader                     ← flat water colour
+│
+├── Art/
+│   ├── Tiles/                                ← Tile textures
+│   ├── Sprites/                              ← Entity thumbnails for palette UI
+│   └── Prefabs/                              ← Reusable prefabs
+│
+└── Tests/EditMode/                           ← EditMode tests (asmdef: EditModeTests)
 ```
 
-> `Assets/Scripts/Editor/` may exist for dev tools (placeholder generators, etc.) but is excluded from builds automatically.
+> `Assets/Scripts/Editor/` exists for dev tools (placeholder asset generators) and is excluded from builds automatically.
 
 ## SpacetimeDB Integration
 
-Identical to the game client:
+The editor uses the same SpacetimeDB C# SDK as the client, but with a wider, **unfiltered** subscription set since designers may inspect any zone:
 
-**Connection lifecycle:**
+```text
+player, zone, entity_instance, terrain_chunk, portal,
+item_def, loot_table, enemy_def, enemy,
+world_clock, weather_state
+```
 
-1. `DbConnection.Builder()` — connect to `http://localhost:3000` (dev) or cloud URL (prod)
-2. `OnConnect` — subscribe to `Zone`, `TerrainChunk`, and `EntityInstance` tables
-3. `OnSubscriptionApplied` — register table callbacks: `Zone.OnInsert`, `TerrainChunk.OnInsert/OnUpdate`, `EntityInstance.OnInsert/OnUpdate/OnDelete`
-4. `FrameTick()` — called every `Update()` to process incoming messages
+(`SpacetimeDBManager.OnConnect` in [editor/Assets/Scripts/Runtime/SpacetimeDBManager.cs](../../editor/Assets/Scripts/Runtime/SpacetimeDBManager.cs).)
 
-**Generated bindings** — `spacetime generate --lang csharp` produces typed C# classes for every table and reducer. Output goes to `Assets/Scripts/autogen/`. Regenerate after any server schema change.
+Callbacks are registered in `OnSubscriptionApplied` for: `Zone`, `EntityInstance`, `Enemy`, `TerrainChunk`, `Portal`, `ItemDef`, `LootTable`, `EnemyDef`, `WorldClock`, `WeatherState`. Each fires through the singleton's events so panels and renderers can react.
+
+The SpacetimeDB SDK must be added manually to `Packages/manifest.json`:
+
+```json
+"com.clockworklabs.spacetimedbsdk":
+  "https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk.git"
+```
 
 ## UI Architecture
 
 All UI is built with **Unity UI Toolkit (UIElements)** — never uGUI, IMGUI, or EditorGUI (those are Editor-only and won't compile in builds).
 
-**Implemented panels:**
+### Implemented panels
 
-| Panel          | File                                | Position     | Purpose                                                     |
-|----------------|-------------------------------------|--------------|-------------------------------------------------------------|
-| Zone Manager   | `ZoneCreationPanel.cs/.uxml/.uss`   | Top-left     | Create zones, list/select existing zones; collapsible       |
-| Brush Panel    | `TilePalettePanel.cs/.uxml/.uss`    | Top-right    | Brush type, mode, layer, radius, strength; collapsible      |
-| Entity Palette | `EntityPalettePanel.cs/.uxml/.uss`  | Bottom-right | Entity types grouped by NPC/Enemy/Prop; click to select     |
+| Panel | File(s) | Position | Purpose |
+|-------|---------|----------|---------|
+| Toolbar | `ToolbarController.*` | Top | Toggle other panels |
+| Zone Manager | `ZoneCreationPanel.*` | Top-left | Create/select zones, MoodPreset dropdown |
+| Brush Panel | `TilePalettePanel.*` | Top-right | Brush type, mode, layer, radius, strength |
+| Entity Palette | `EntityPalettePanel.*` | Bottom-right | NPC/Enemy/Prop palette; click to select |
+| Enemy Def | `EnemyDefCreationPanel.cs` | Modal | Define enemy archetypes |
+| Loot | `LootCreationPanel.cs` | Modal | Define item templates + per-enemy loot tables |
+| World Graph | `WorldGraphPanel.*` | Full-screen | Portal node canvas + drag-to-create edges |
+| Weather Debug | `WeatherDebugPanel.cs` | Admin only | WeatherKind buttons + intensity slider |
 
-**Zone Manager** auto-collapses when a zone is activated; chevron button expands/collapses manually. **Brush Panel** and **Entity Palette** are manual-toggle only. Selecting a terrain brush clears the entity selection (mutual exclusion) and vice versa.
+**Mutual exclusion:** selecting a terrain brush clears the entity selection and vice versa. The Zone Manager auto-collapses when a zone is activated; chevron expands/collapses manually.
 
-**Planned panels (future):**
+### UI Toolkit gotchas (carried over from session memory)
 
-| Panel            | Purpose                                     |
-|------------------|---------------------------------------------|
-| Properties panel | Selected entity properties                  |
-
-Stylesheets are applied programmatically (`root.styleSheets.Add(_styleSheet)`) via a `[SerializeField] StyleSheet _styleSheet` field assigned in the scene, not via UXML `<Style>` tags (Unity doesn't resolve those for runtime-created files).
+- Every UIDocument with a full-screen transparent root must set `root.pickingMode = PickingMode.Ignore` in `OnEnable`, or the document silently swallows pointer events from documents rendered beneath it. Also set `Ignore` on any full-screen child wrapper (e.g. `.panel-wrapper`).
+- UIDocument **Sort Order** (Inspector) decides picking priority across documents; higher wins regardless of `PickingMode`. `ZoneCreationPanel = 100`, background overlays = 10.
+- USS stylesheets do not auto-resolve from `<Style src="…">` in runtime-built UXML — use `[SerializeField] StyleSheet _styleSheet` and assign in the Inspector, then `root.styleSheets.Add(_styleSheet)`.
+- Any new folder under `Assets/Scripts/` needs its own asmdef + a reference from `ZoneForgeRuntime.asmdef`. The editor uses asmdefs (the client does not).
 
 ## Terrain System
 
 Terrain is **procedurally generated from height and splat data** stored per chunk in the `TerrainChunk` table. There are no individual tile GameObjects for ground terrain.
 
-**Chunk layout:** A zone of width W × height H is divided into chunks of `ChunkSize × ChunkSize` units. Each chunk has one `TerrainChunk` row containing `height_data` and `splat_data` byte arrays (one byte per sample point).
+**Chunk layout:** A zone of `W × H` units is divided into `32 × 32`-unit chunks (`CHUNK_SIZE` on the server). Each chunk has one `TerrainChunk` row containing `height_data` (1024 × f32 LE = 4096 B) and `splat_data` (1024 × RGBA u8 = 4096 B).
 
-**Terrain rendering flow:**
+### Terrain rendering flow
 
-1. `TerrainRenderer` subscribes to `TerrainChunk.OnInsert` and `OnUpdate`
-2. On callback, decodes `height_data` bytes into Mesh vertex Y positions
-3. Decodes `splat_data` bytes into per-vertex UV2 (used by the splatmap shader to blend texture layers)
-4. Uploads Mesh to GPU; material blends Grass/Dirt/Stone/Ravine textures by UV2 value
+1. `TerrainRenderer` subscribes to `TerrainChunk.OnInsert/OnUpdate`
+2. On callback, decodes `height_data` into Mesh vertex Y positions
+3. Decodes `splat_data` into per-vertex UV2 (used by `TerrainSplatmap.shader` to blend Grass/Dirt/Stone/Ravine)
+4. Uploads Mesh to GPU and updates the `MeshCollider`
 
-**Terrain painting flow:**
+### Terrain painting flow
 
 1. Designer left-clicks / drags in the Game view
-2. `TerrainPainter` raycasts against the `MeshCollider` on the `Terrain` GameObject
-3. `TilePalettePanel` provides the active `TerrainBrush` (type, radius, strength)
+2. `TerrainPainter` raycasts the `MeshCollider` (with `Y = 0` plane fallback)
+3. `TilePalettePanel` supplies the active `TerrainBrush` (type, mode, layer, radius, strength)
 4. Brush computes affected samples and updates local `TerrainChunkData` copies
-5. `paint_terrain(zone_id, chunk_x, chunk_z, height_data, splat_data)` called for each modified chunk
-6. Server updates `TerrainChunk` rows; all subscribers (editor + game client) receive `OnUpdate` and rebuild their Meshes
+5. `update_terrain_chunk(zone_id, cx, cz, height_data, splat_data)` is called for each modified chunk
+6. Server validates 4096-byte arrays + bounds and updates the `TerrainChunk` row
+7. All subscribers (editor + game client) receive `OnUpdate` and rebuild their meshes
 
-**Water:** `WaterRenderer` renders a flat quad Mesh at `zone.water_level`. Any terrain vertex below that level appears submerged.
+**Water:** `WaterRenderer` draws a flat quad Mesh at `zone.water_level`. Any terrain vertex below that level appears submerged.
+
+## Atmosphere
+
+`AtmosphereController` subscribes (via `SpacetimeDBManager`) to:
+
+- `WorldClock` — drives time-of-day curves (`MoodPreset.sun/ambient/fog` keyframes)
+- `WeatherState` (filtered to active zone) — spawns the matching weather VFX prefab from `Resources/WeatherVFX/`
+- `Zone.mood_preset_id` — switches `MoodPreset` ScriptableObject
+
+`AmbientAudioMixer` crossfades a 3-layer mix (`Base`, `Weather`, `Time`) through the `AudioMixer` asset's `Master → Ambient → {Base, Weather, Time}` groups.
+
+The `WeatherDebugPanel` calls `change_weather` and `set_zone_mood` reducers (admin-gated server-side) to test atmosphere changes live.
 
 ## Key Unity Packages
 
-| Package                         | Purpose                              |
-|---------------------------------|--------------------------------------|
-| Universal Render Pipeline (URP) | Core 3D rendering pipeline           |
-| UI Toolkit                      | Runtime world-building UI panels     |
-| SpacetimeDB Unity SDK           | Real-time backend integration        |
+| Package | Purpose |
+|---------|---------|
+| Universal Render Pipeline (URP) | Core 3D rendering pipeline |
+| UI Toolkit | Runtime world-building UI panels |
+| TextMeshPro | UI text |
+| SpacetimeDB Unity SDK | Real-time backend integration |
 
-**Assembly Definitions:**
+### Assembly Definitions
 
-- `ZoneForgeAutogen.asmdef` — isolates generated bindings; references SpacetimeDB SDK
-- `ZoneForgeRuntime.asmdef` — runtime scripts; references SpacetimeDB SDK + `ZoneForgeAutogen`
-- `EditModeTests.asmdef` — unit tests; references `ZoneForgeRuntime`
+```text
+ZoneForgeAutogen     ← references: SpacetimeDB SDK
+ZoneForgeData        ← references: (none)
+ZoneForgeRuntime     ← references: SpacetimeDB SDK, ZoneForgeAutogen, ZoneForgeData
+EditModeTests        ← references: ZoneForgeRuntime, NUnit
+```
 
 ## See Also
 
 - [Overview.md](Overview.md) — System architecture and data flow
 - [Client.md](Client.md) — Game client architecture (for comparison)
+- [Diagrams.md](Diagrams.md) — Schema + sequence diagrams
 - [../guides/Editor_Dev.md](../guides/Editor_Dev.md) — Daily editor development workflow
 - [../guides/Getting_Started.md](../guides/Getting_Started.md) — Full environment setup

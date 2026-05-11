@@ -4,9 +4,12 @@
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 1.3 | 2026-05-10 | Marked the in-guide module as a minimal starter; pointed at [Server.md](../architecture/Server.md) for live multi-file schema (combat, enemy, portal, inventory, loot, atmosphere); fixed hardcoded `zone_id: 1` in `create_player` sample to match the current "lowest-id zone" rule |
 | 1.2 | 2026-03-24 | Updated basic module code sample to match current server schema (terrain_width/height/water_level on Zone; mana/is_dead on Player; water_level param on create_zone); updated SQL verification output |
 | 1.1 | 2026-03-07 | Added ConnectionTest.cs section and full verification steps |
 | 1.0 | 2026-02-01 | Initial guide |
+
+> The code block in §6 below is a **minimal starter module** for first-time setup. The live ZoneForge module is split across multiple files (`lib.rs`, `terrain.rs`, `combat.rs`, `enemy.rs`, `portal.rs`, `inventory.rs`, `loot.rs`, `atmosphere.rs`) and adds many more tables/reducers — see [docs/architecture/Server.md](../architecture/Server.md) for the canonical reference.
 
 ---
 
@@ -541,16 +544,22 @@ pub struct Zone {
     pub water_level: f32,
 }
 
-// Reducer to create a new player
+// Reducer to create a new player.
+// Uses the lowest-id zone as default spawn — `zone_id: 1` is fragile because
+// SpacetimeDB auto-increment ids may skip values; this matches the live module.
 #[reducer]
 pub fn create_player(ctx: &ReducerContext, name: String) {
+    let Some(default_zone) = ctx.db.zone().iter().min_by_key(|z| z.id) else {
+        log::warn!("create_player: no zones exist yet — create a zone first");
+        return;
+    };
     let player = Player {
         id: 0, // auto_inc will assign
         identity: ctx.sender(),
         name,
-        zone_id: 1, // Default starting zone
-        position_x: 0.0,
-        position_y: 0.0,
+        zone_id: default_zone.id,
+        position_x: default_zone.terrain_width  as f32 / 2.0,
+        position_y: default_zone.terrain_height as f32 / 2.0,
         health: 100,
         max_health: 100,
         mana: 100,

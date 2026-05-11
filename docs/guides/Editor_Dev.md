@@ -49,8 +49,8 @@ spacetime generate --lang csharp --out-dir Assets/Scripts/autogen \
 ```csharp
 // TerrainPainter raycasts against the MeshCollider on the Terrain GameObject.
 // TilePalettePanel provides the active TerrainBrush (type, radius, strength).
-// On hit, the brush updates local TerrainChunkData, then calls:
-Reducers.PaintTerrain(zoneId, chunkX, chunkZ, heightData, splatData);
+// On hit, the brush updates local TerrainChunkData, then calls the generated reducer:
+Conn.Reducers.UpdateTerrainChunk(zoneId, chunkX, chunkZ, heightData, splatData);
 // Server updates TerrainChunk; all subscribers (editor + client) rebuild their Meshes.
 ```
 
@@ -60,8 +60,8 @@ Reducers.PaintTerrain(zoneId, chunkX, chunkZ, heightData, splatData);
 // EntityPlacer raycasts against the MeshCollider on the Terrain GameObject.
 // Falls back to the Y=0 plane if the collider is unavailable or the ray misses.
 // EntityPalettePanel provides the selected EntityDefinition (prefab name, type, colour).
-// On click, EntityPlacer calls:
-Reducers.SpawnEntity(zoneId, prefabName, hitPoint.x, hitPoint.z, hitPoint.y, entityType);
+// On click, EntityPlacer calls the generated reducer:
+Conn.Reducers.SpawnEntity(zoneId, prefabName, hitPoint.x, hitPoint.z, hitPoint.y, entityType);
 // Server inserts an EntityInstance row; EntityRenderer spawns a placeholder cube on insert.
 // EntityPalettePanel.ClearSelection() is called when a terrain brush is activated (mutual exclusion).
 ```
@@ -114,7 +114,7 @@ When working in `editor/` with Claude Code:
 - **`unity-spacetimedb-subscribe`** — correct subscription ordering, callback registration, and `FrameTick` usage (same patterns as client)
 - **`unity-autogen-refresh`** — regenerating C# bindings after server schema changes
 
-Editor-specific skills for zone creation and tile placement patterns are planned for a future phase.
+Editor-specific gotchas (UIDocument picking modes, USS attach pattern, asmdef chain, ScriptableObject mirroring) are documented inline in [../architecture/Editor.md](../architecture/Editor.md#ui-toolkit-gotchas-carried-over-from-session-memory).
 
 See [Claude_Skills.md](Claude_Skills.md) for the full skills reference.
 

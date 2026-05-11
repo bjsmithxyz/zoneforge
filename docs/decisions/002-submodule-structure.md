@@ -7,10 +7,11 @@
 
 ## Context
 
-ZoneForge has two distinct codebases that have very different toolchains, contributors, and release cadences:
+ZoneForge has three distinct codebases that have very different toolchains, contributors, and release cadences:
 
-- **Client** — Unity 2022.3 LTS project, C#, large binary assets (textures, meshes, audio) tracked via Git LFS
-- **Server** — Rust WASM module, no binary assets, pure source code
+- **Game client** (`client/`) — Unity 2022.3 LTS project, C#, large binary assets (textures, meshes, audio) tracked via Git LFS
+- **World editor** (`editor/`) — Unity 2022.3 LTS standalone runtime app, C#, separate Unity project; sibling to the game client (added shortly after the umbrella was established)
+- **Server** (`server/`) — Rust WASM module, no binary assets, pure source code
 
 A structural decision was needed before the first commit: how to organise these into repositories.
 
@@ -26,7 +27,7 @@ The options considered were:
 
 ## Decision
 
-Use an **umbrella repo** (`zoneforge`) with `client/` and `zoneforge-server` as git submodules.
+Use an **umbrella repo** (`zoneforge`) with `client/` (zoneforge-client), `editor/` (zoneforge-editor), and `server/` (zoneforge-server) as git submodules.
 
 ---
 
@@ -51,11 +52,11 @@ Without an umbrella, there is no single place to pin compatible client+server ve
 
 ## Submodule Workflow
 
-When pushing changes to `client/` or `server/`, update the umbrella to track the new commits:
+When pushing changes to `client/`, `editor/`, or `server/`, update the umbrella to track the new commits:
 
 ```bash
 cd /path/to/zoneforge
-git add client server
+git add client editor server
 git commit -m "Update submodule refs"
 git push
 ```
@@ -73,13 +74,14 @@ git clone --recurse-submodules https://github.com/bjsmithxyz/zoneforge
 | Risk | Mitigation |
 |------|-----------|
 | Submodule UX is notoriously confusing for new contributors | README and Getting Started guide include explicit submodule clone instructions |
-| Forgetting to update the umbrella after pushing to a submodule | Keep `git add client server && git commit` as a step in the dev workflow (documented in CLAUDE.md) |
+| Forgetting to update the umbrella after pushing to a submodule | Keep `git add client editor server && git commit` as a step in the dev workflow (documented in CLAUDE.md) |
 | Submodule detached HEAD state confuses contributors | Document: always work in a branch inside the submodule, not in the umbrella checkout |
 
 ---
 
 ## Consequences
 
-- Three GitHub repositories: `zoneforge` (umbrella), `zoneforge-client`, `zoneforge-server`
+- Four GitHub repositories: `zoneforge` (umbrella), `zoneforge-client`, `zoneforge-editor`, `zoneforge-server`
 - All CI/CD runs in the submodule repos; the umbrella is a coordinator only
 - `git clone --recurse-submodules` is the required clone command
+- New worktrees created from the umbrella must run `git submodule update --init --recursive --force` (`--force` is required because `.git/modules/` entries already exist in the main worktree)

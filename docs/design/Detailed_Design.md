@@ -9,8 +9,8 @@
 **Project Name:** ZoneForge
 **Client Engine:** Unity 2022.3 LTS
 **Backend:** SpacetimeDB 2.x with Rust
-**Document Version:** 2.1
-**Date:** March 24, 2026
+**Document Version:** 2.2
+**Date:** May 10, 2026
 **Target Platform:** Windows, macOS, Linux, WebGL (Client) | Cloud/Self-Hosted (Server)
 
 ---
@@ -19,9 +19,12 @@
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 2.2 | 2026-05-10 | Schema refresh for Phase 5: `mood_preset_id` on Zone; Portal/Enemy/Inventory/Loot/Atmosphere tables shipped; admin model documented; roadmap section replaced with pointer to PROGRESS.md (actual 7-phase plan). See [../architecture/Server.md](../architecture/Server.md) for live schema. |
 | 2.1 | 2026-03-24 | Updated all SpacetimeDB examples to 2.x API; corrected table schemas (Zone, Player, EntityInstance); replaced 2D tile-layer system with terrain chunk system; removed unused Unity packages; noted missing AI server tables |
 | 2.0 | 2026-03-07 | SpacetimeDB integration — replaced local file persistence with server tables and reducers |
 | 1.0 | 2026-01-15 | Initial design document |
+
+> **Live schema:** the canonical reference for every table and reducer is [docs/architecture/Server.md](../architecture/Server.md). Code samples in this design doc may lag implementation — they describe intent and shape, not the wire-level current truth.
 
 ---
 
@@ -445,7 +448,7 @@ The world is organized using a **hybrid storage model**:
 ```rust
 use spacetimedb::{table, SpacetimeType, Identity};
 
-// Zone stores terrain dimensions and water level.
+// Zone stores terrain dimensions, water level, and atmosphere mood.
 // terrain_width/height are in world units; chunks are 32×32 each.
 #[table(accessor = zone, public)]
 pub struct Zone {
@@ -456,6 +459,7 @@ pub struct Zone {
     pub terrain_width: u32,
     pub terrain_height: u32,
     pub water_level: f32,
+    pub mood_preset_id: u32,   // → MoodPreset ScriptableObject id (set via set_zone_mood reducer)
 }
 
 // Per-chunk heightmap and splatmap. create_zone initialises one row per chunk.
@@ -487,9 +491,23 @@ pub struct EntityInstance {
     pub entity_type: String,
 }
 
-// Portal table — planned for Phase 4
-// #[table(accessor = portal, public)]
-// pub struct Portal { ... }
+// Portal table (shipped Phase 4 Group 10). Full schema in Server.md.
+#[table(accessor = portal, public)]
+pub struct Portal {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub source_zone_id: u64,
+    #[index(btree)]
+    pub dest_zone_id: u64,
+    pub source_x: f32,
+    pub source_y: f32,
+    pub dest_spawn_x: f32,
+    pub dest_spawn_y: f32,
+    pub bidirectional: bool,
+    pub label: String,
+}
 ```
 
 #### Client Data (Unity ScriptableObjects)
@@ -593,29 +611,26 @@ Terrain is **procedurally generated from height and splat data** stored per chun
 
 ### 5.4 Zone Stitching and Portals
 
-#### Portal System
+Shipped Phase 4 Group 10. Portals are server rows (`Portal` table) — not client ScriptableObjects — so an editor change is immediately visible to all clients.
 
-```csharp
-public class PortalData : ScriptableObject
-{
-    public string portalID;
-    public ZoneData sourceZone;
-    public Vector2Int sourcePosition;        // grid coordinates
-    public ZoneData destinationZone;
-    public string destinationSpawnPoint;     // spawn point ID
-    public TransitionType transitionType;    // Instant, FadeToBlack, Cutscene
-    public List<Condition> requiredConditions;
-}
-```
+#### Server model
 
-#### World Graph View
+See `Portal` table in §5.1 above. Source and destination coordinates are world-space `(x, y)` on each zone's terrain. `bidirectional = true` allows the same portal row to be entered from either zone.
 
-Custom editor window (**Tools > RPG Editor > World Graph**) displays:
+#### Client behaviour
 
-- Node-based visualization of zones (boxes) and portals (connecting lines)
-- Click-and-drag to create new portal connections
-- Double-click zone node to open in Scene view
-- Auto-layout algorithms to organize complex world graphs
+- `PortalManager` subscribes to `portal WHERE source_zone_id = CurrentZoneId OR dest_zone_id = CurrentZoneId` and spawns a ring GameObject per row.
+- `ZoneTransferManager.Update` polls proximity. On trigger, it plays `RippleWarpEffect` and calls the `enter_zone()` reducer.
+- Server moves the player atomically, fires `Player.OnUpdate`, the client flips `SpacetimeDBManager.CurrentZoneId`, and re-subscribes heavy tables filtered to the new zone.
+
+#### World Graph editor panel
+
+`WorldGraphPanel` (editor submodule, UIToolkit) displays:
+
+- Node-based visualization of zones (boxes) and portals (edges)
+- Click-and-drag between zone nodes to create new portal rows via `create_portal` (admin-gated)
+- Edit/delete via context menu (`delete_portal`)
+- `PortalRenderer` shows in-world portal markers in the main 3D viewport
 
 ---
 
@@ -689,29 +704,72 @@ Node-based dialogue editor (similar to Unity's Shader Graph):
 
 ### 6.4 Enemy AI System
 
-#### EnemyData ScriptableObject
+Shipped Phase 3 Group 9. Enemies are server-authoritative rows; the AI state machine runs in a 2 Hz `tick_ai` scheduled reducer. Live schema in [Server.md](../architecture/Server.md#enemies-enemyrs).
 
-```csharp
-public class EnemyData : ScriptableObject
-{
-    public string enemyName;
-    public int health;
-    public float movementSpeed;
-    public float aggroRadius;                // detection range
-    public float fleeThreshold;              // health % to start fleeing
-    public BehaviorTreeAsset behaviorTree;
-    public List<AbilityData> attackAbilities;
-    public LootTableData lootTable;
+#### Server tables (enemy.rs)
+
+```rust
+#[derive(SpacetimeType, Clone, Copy, Debug, PartialEq)]
+pub enum EnemyType { Melee, Ranged, Caster }
+
+#[derive(SpacetimeType, Clone, Copy, Debug, PartialEq)]
+pub enum AiState { Idle, Chase, Attack }
+
+#[table(accessor = enemy_def, public)]
+pub struct EnemyDefinition {
+    #[primary_key] #[auto_inc] pub id: u64,
+    pub name: String,
+    pub enemy_type: EnemyType,
+    pub prefab_name: String,
+    pub max_health: i32,
+    pub damage: i32,
+    pub aggro_range: f32,
+    pub attack_range: f32,
+    pub attack_speed_ms: u64,
+    pub move_speed: f32,
 }
+
+#[table(accessor = spawn_point, public)]
+pub struct SpawnPoint {
+    #[primary_key] #[auto_inc] pub id: u64,
+    #[index(btree)] pub zone_id: u64,
+    pub x: f32, pub y: f32,
+    pub enemy_def_id: u64,
+    pub max_count: u32,
+    pub respawn_delay_s: u32,
+}
+
+#[table(accessor = enemy, public)]
+pub struct Enemy {
+    #[primary_key] #[auto_inc] pub id: u64,
+    #[index(btree)] pub zone_id: u64,
+    pub spawn_point_id: Option<u64>,
+    pub enemy_def_id: u64,
+    pub position_x: f32, pub position_y: f32,
+    pub home_x: f32,     pub home_y: f32,
+    pub health: i32,
+    pub ai_state: AiState,
+    pub target_player_id: Option<u64>,
+    pub last_attack_us: u64,
+    pub is_dead: bool,
+}
+
+// Schedulers (self-rescheduling)
+// - AiTick fires every 500 ms → tick_ai walks every live enemy through the state machine
+// - EnemyRespawnTick fires once per kill → respawns enemy at its SpawnPoint after respawn_delay_s
 ```
 
-#### Behavior Tree Integration
+#### State transitions (tick_ai)
 
-Use Unity-compatible behavior tree plugin (e.g., Behavior Designer or custom):
+- **Idle → Chase** when nearest live player ≤ `aggro_range`
+- **Chase → Attack** when target ≤ `attack_range`
+- **Attack → Chase** if target moves out of `attack_range`
+- **Any → Idle** if target dies or zones out
+- **Death (`is_dead = true`)** is set by `apply_damage` when health ≤ 0; `EnemyRespawnTick` is scheduled with `respawn_delay_s` if the enemy was bound to a `SpawnPoint`
 
-- **States**: Idle, Patrol, Chase, Attack, Flee, Dead
-- **Transitions**: Based on player distance, health thresholds, ability cooldowns
-- **Custom nodes**: CastSpell, TeleportToPosition, SummonMinion
+#### Loot
+
+When `attack_enemy` kills an `Enemy`, `spawn_loot_drops` (helper in `loot.rs`) iterates the killer's `LootTable` rows for that `enemy_def_id` and inserts `ItemDrop` rows for any rolls that pass `drop_chance` (0-100). Quantity is uniformly random in `[min_quantity, max_quantity]`. Drops are picked up with the `pickup_item` reducer (F key, proximity-validated client-side, range-validated server-side).
 
 ---
 
@@ -1673,6 +1731,30 @@ URP Post-Processing Volume (per-zone or global):
 - **Depth of Field**: Focus on foreground, blur background (optional)
 - **Chromatic Aberration**: Subtle lens distortion for cinematic feel
 
+### 10.5 Atmosphere System (shipped, Phase 5 Group 14)
+
+The `LightingProfile` design in §10.2 was realised as the `MoodPreset` ScriptableObject, driven at runtime by a server-authoritative world clock and per-zone weather.
+
+#### Server (atmosphere.rs)
+
+- `WorldClock` — single-row table; `tick_world_time` reducer advances `minutes_of_day` by 1 every real second (mod 1440 = 24 h cycle)
+- `WeatherState` — one row per zone; `kind ∈ {Clear, Rain, Storm, Fog, Snow}`, `intensity ∈ [0, 1]`
+- `Zone.mood_preset_id` — id of a `MoodPreset` ScriptableObject in `Resources/MoodPresets/`
+- Admin reducers: `change_weather`, `set_zone_mood`
+
+#### Client (`AtmosphereController` + `AmbientAudioMixer`)
+
+- Subscribes to `WorldClock`, `WeatherState WHERE zone_id = CurrentZoneId`, and `Zone.OnUpdate` for mood changes
+- `MoodPreset` carries sun rotation/intensity, ambient colour, fog density, post-fx profile, and a 3-layer audio set (base / weather / time)
+- Weather VFX prefabs are loaded from `Resources/WeatherVFX/` and crossfaded by `intensity`
+- 3-layer `AudioMixer`: `Master → Ambient → {Base, Weather, Time}` with linear crossfades on layer change
+
+#### Authoring
+
+The editor's `WeatherDebugPanel` (admin-only) sends `change_weather` and `set_zone_mood` calls live. `ZoneCreationPanel` includes a MoodPreset dropdown that writes `mood_preset_id` on zone create.
+
+Bundled `MoodPresets`: `village_day`, `forest`, `night_camp`. Rain + fog VFX fully wired; Storm + Snow stub as Rain duplicates pending art.
+
 ---
 
 ## 11. Editor UI and Tools
@@ -1705,206 +1787,57 @@ URP Post-Processing Volume (per-zone or global):
 
 ## 12. Development Roadmap
 
-### 12.1 Phase 1: Core Editor + SpacetimeDB Foundation (Months 1-3)
+> **Authoritative source:** [PROGRESS.md](PROGRESS.md). The list below summarises the **shape** of the plan; PROGRESS.md tracks the actual checkbox state.
 
-#### Month 1: Foundation
+The roadmap is organised into numbered phases and groups, not calendar months. Phases gate on milestones, not dates.
 
-**Unity Client:**
+### Phase 1 — Core Editor + SpacetimeDB Foundation ✅
 
-- Unity project setup with URP and core packages
-- ScriptableObject architecture for visual/asset data
-- Basic map editor: Create zone, paint tiles on grid
-- Import test assets (1 character model, 5 prop models, basic textures)
+- Group 1 — Environment & tooling
+- Group 2 — Server core (Player, Zone, EntityInstance, basic reducers)
+- Group 3 — Unity projects + SpacetimeDB C# SDK
+- Group 4 — Editor foundation
 
-**SpacetimeDB Server:**
+**Milestone:** Unity connects to SpacetimeDB, three-repo structure live.
 
-- Install Rust toolchain and SpacetimeDB CLI
-- Initialize SpacetimeDB module project
-- Define core tables: Zone, Player, EntityInstance
-- Implement basic reducers: create_player, move_player, enter_zone
-- Deploy to local SpacetimeDB server for testing
+### Phase 2 — Entity System + Real-Time Sync ✅
 
-#### Month 2: Entity System + Real-Time Sync
+- Group 5 — Terrain system (chunked) + entity placement
+- Group 6 — Player movement, prediction, reconciliation
 
-**Unity Client:**
+**Milestone:** Players move in real time across multiple clients.
 
-- Entity Palette window with drag-and-drop placement
-- SpacetimeDB C# SDK integration
-- Subscribe to Player and EntityInstance tables
-- Real-time entity position updates
-- Player controller: WASD movement → calls move_player reducer
+### Phase 3 — Combat + Server Authority ✅
 
-**SpacetimeDB Server:**
+- Group 7 — Combat foundation (Ability, StatusEffect, CombatLog, use_ability, respawn)
+- Group 8 — Combat UI & abilities (hotbar, damage numbers, pooling)
+- Group 9 — Enemy AI (EnemyDef, SpawnPoint, Enemy, tick_ai)
 
-- NPC table with basic properties
-- Enemy table with health and position
-- Server-side movement validation (speed limits, wall collision)
-- Zone boundary enforcement
+**Milestone:** Server-authoritative combat working with 2+ players.
 
-#### Month 3: Triggers and Multiplayer Playtest
+### Phase 4 — Zone Stitching ✅ (local) · ⏳ (cloud)
 
-**Unity Client:**
+- Group 10 — Zone Portals + WorldGraph editor + RippleWarp transfer
+- Group 11 — Zone content (Village/Forest/Cave) + multi-player zone transfer
 
-- Visual Scripting UI for trigger design
-- Convert visual scripts to Rust reducer calls
-- In-editor playtest: Press Play to test zone
-- Multi-client testing (2+ players in same zone)
+**Remaining:** SpacetimeDB Cloud account + CI/CD, production deploy, load testing 10+ players.
 
-**SpacetimeDB Server:**
+### Phase 5 — Systems Polish ✅ Groups 12–14, ongoing polish pass
 
-- Trigger table and event system
-- Implement 5 core trigger reducers
-- 10 action reducers (spawn_entity, play_sound, give_item, etc.)
-- Condition checking (has_item, quest_status, etc.)
+- Group 12 — Triggers, quests, NPC authoring (item/inventory/NPC/dialogue server)
+- Group 13 — Inventory & loot (Equipment, LootTable, ItemDrop, pickup_item, loot panel)
+- Group 14 — Atmosphere (WorldClock, WeatherState, MoodPreset, weather VFX, 3-layer audio)
+- **Polish pass** (current focus) — combat feel, UI refinement, editor UX, server perf, bug sweep
 
-**Milestone: Multiplayer Village Zone**
+### Phase 6 — Advanced Multiplayer (future)
 
-- 1 village map (64x64) with 5 buildings, 3 NPCs
-- Simple quest: Talk to NPC → collect item → return
-- **2-4 players can complete quest together in real-time**
-- Deploy to SpacetimeDB Cloud for remote testing
+- Group 15 — Party System (Party / PartyInvite tables, shared loot)
+- Group 16 — PvP & Guilds (PvPFlag, Leaderboard, Guild/GuildInvite/GuildPermissions)
+- Group 17 — Economy & World Events (AuctionHouse, Crafting)
 
-### 12.2 Phase 2: Combat + Server Authority (Months 4-6)
+### Phase 7 — Cloud Deployment (future)
 
-#### Month 4: Combat Foundation
-
-**Unity Client:**
-
-- Combat VFX: Hit sparks, spell projectiles
-- Ability UI: Hotbar, cooldown indicators
-- Health bars and damage numbers
-
-**SpacetimeDB Server:**
-
-- Combat tables: Ability, StatusEffect, CombatEvent
-- Damage calculation reducers (server-authoritative)
-- Ability system: 1 melee attack, 2 spells (fireball, heal)
-- Status effect system (burn, freeze, stun)
-- Anti-cheat validation (cooldowns, mana costs)
-
-#### Month 5: Zone Stitching + Cloud Deployment
-
-**Unity Client:**
-
-- Portal system implementation
-- World Graph editor window
-- Scene loading/unloading optimization
-
-**SpacetimeDB Server:**
-
-- Portal table and zone transfer reducers
-- Cross-zone player migration
-- Load balancing considerations (future: multiple zone servers)
-- **Deploy to SpacetimeDB Cloud production**
-
-#### Month 6: Systems Polish + Inventory
-
-**Unity Client:**
-
-- Inventory system UI (grid-based, drag-and-drop)
-- Equipment slots (weapon, armor, accessories)
-- UI framework: Health bars, hotbar, minimap
-
-**SpacetimeDB Server:**
-
-- Item and Inventory tables
-- Server-side inventory validation
-- Equipment stat bonuses
-- Trade system between players
-- Loot table and drop system
-
-**Milestone: Multiplayer Combat Demo**
-
-- 15-minute gameplay loop: Village → Forest (fight 3 enemies) → Cave (boss fight)
-- **Support 10+ concurrent players per server**
-- Server-authoritative combat (no client-side cheating possible)
-
-### 12.3 Phase 3: Advanced Features + Scaling (Months 7-9)
-
-#### Month 7: Advanced Triggers + Quests
-
-**Unity Client:**
-
-- Branching dialogue system
-- Quest UI: Objectives, tracking, rewards
-- Cutscene tools using Unity Timeline
-
-**SpacetimeDB Server:**
-
-- Quest table and progression system
-- Quest sharing in parties
-- Persistent quest state across sessions
-- Condition/Action library expansion (20+ modules)
-
-#### Month 8: Interior Builder + Lighting
-
-**Unity Client:**
-
-- Building interior editor (place furniture, props)
-- Door/window placement tools
-- Lighting preset system (Spooky, Sunny, Tavern, etc.)
-- Baked lightmaps for static geometry
-
-**Server (Minimal Changes):**
-
-- Interior zone definitions
-- Door lock/unlock state
-
-#### Month 9: AI Enhancements + Production Readiness
-
-**Unity Client:**
-
-- AI visualization tools in editor
-
-**SpacetimeDB Server:**
-
-- Advanced enemy AI (3 behavior templates: Melee, Ranged, Caster)
-- Server-side pathfinding
-- AI spawning and despawning optimization
-- **Performance tuning for 100+ concurrent players**
-- Database backup and restore procedures
-- Server monitoring and logging
-
-**Milestone: Production-Ready Vertical Slice**
-
-- 30-minute campaign: 5 zones, 3 quests, 10 unique enemies, 1 boss
-- **Support 50-100 concurrent players**
-- Cloud deployment with CI/CD pipeline
-- Zero-downtime updates via SpacetimeDB module publishing
-
-### 12.4 Phase 4: Multiplayer Features (Months 10-12) - Future Roadmap
-
-#### Planned Features:
-
-**Party System:**
-
-- Player groups with shared quests
-- Party chat and voice
-- Shared loot distribution
-
-**PvP System:**
-
-- Dueling between consenting players
-- PvP zones
-- Leaderboards
-
-**Guild System:**
-
-- Player-created organizations
-- Guild halls (persistent zones)
-- Guild progression and perks
-
-**Economy:**
-
-- Player-to-player trading
-- Auction house
-- Crafting system
-
-**World Events:**
-
-- Server-wide boss spawns
-- Dynamic events affecting all players
-- Seasonal content
+- Group 18 — Production deployment, CI/CD, load testing
 
 ---
 
